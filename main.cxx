@@ -1,4 +1,5 @@
-/* Include any necessary .h files, such as math.h, stdio.h, etc */ #include <fftw3.h> 
+/* Include any necessary .h files, such as math.h, stdio.h, etc */ 
+#include <fftw3.h> 
 int main() 
 {
   /* 1. declarations of relevant variables */
