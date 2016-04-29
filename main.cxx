@@ -1,66 +1,72 @@
 /* Include any necessary .h files, such as math.h, stdio.h, etc */ 
 #include <fftw3.h>
 #include <cmath> // for pow() 
+#include <math.h> // for floor()
+
+using namespace std;
+
 int main() 
 {
   /* 1. declarations of relevant variables */
   const int ngrid=pow(64,1); // supposed to be 64**3, but don't want to break things with big numbers...
   const int npart=pow(32,1); // supposed to be 32**3, but big numbers are bad when you make mistakes...
-
+  
   const int TMAX=100; // number of timesteps
-
+  
   double x[ngrid];
   double y[ngrid];
   double z[ngrid];
-
+  
   double vx[ngrid];
   double vy[ngrid];
   double vz[ngrid];
-
+  
   double rho[2][3][ngrid];    // I don't really know what is going on here.... at all.
   double phi[10][10][10];     // ditto
-
+  
   double a;     // don't know what this is (scale parameter?)
   double da;    // time-stepping parameter?
-
-
+  
+  
+  //There are a lot of variables that are used throughout here...
+  //double G = 6.6740831 * pow(10, -11);
+  
   /* 2. read in or setup initial conditions */
-
-// I think this part is explained in the hand-out
-// I have it set up in loops write now just so there is something in the arrays
+  
+  // I think this part is explained in the hand-out
+  // I have it set up in loops write now just so there is something in the arrays
   for (int i=0; i<ngrid; i++)
     {
       x[i]=1;
       y[i]=1;
       z[i]=1;
-
+      
       vx[i]=0;     
       vy[i]=0;
       vz[i]=0;
     }
-
-
+  
+  
   /* 3. start loop over time steps */ 
-
+  
   for (int t=0; t<TMAX; t++)
-
-  { 
-    /* 4. call cicInterpolate() */ 
-
-    cicInterpolate(ngrid, npart, x, y, z, rho);
-
-    /* 5. call solvePoisson() */ 
-
-    solvePoisson(a, rho, phi, ngrid);
-
-    /* 6. write out data*/ 
-    // to file?
-
-    /* 7. call updateParticles() */ 
-    updateParticles(ngrid, npart, a, da, x, y, z, vx, vy, vz, phi);
-
-    /* end loop */ 
-  }
+    { 
+      /* 4. call cicInterpolate() */ 
+      
+      cicInterpolate(ngrid, npart, x, y, z, rho);
+      
+      /* 5. call solvePoisson() */ 
+      
+      solvePoisson(a, rho, phi, ngrid);
+      
+      /* 6. write out data*/ 
+      // to file?
+      
+      /* 7. call updateParticles() */ 
+      updateParticles(ngrid, npart, a, da, x, y, z, vx, vy, vz, phi);
+      
+      /* end loop */ 
+    }
 }
 /*
  *Calculate contribution of each particle to the density grid points using the CIC interpolation.
@@ -80,19 +86,43 @@ void solvePoisson(double a, double ***rho, double ***phi, int ngrid) {
      We suggest looking to the fftw_plan_dft_r2c_3d() function for this transform. 
      Any fourier transform in fftw is then followed by the execution command.  
      For example: 
-    // setup fftw plan 
-    pf = fftw_plan_dft_r2c_3d(ngrid, ngrid, ngrid, in, out, FFTW_ESTIMATE); 
-    // take fourier transform
-    fftw_execute(pf); 
+     // setup fftw plan 
+     pf = fftw_plan_dft_r2c_3d(ngrid, ngrid, ngrid, in, out, FFTW_ESTIMATE); 
+     // take fourier transform
+     fftw_execute(pf); 
   */
   /* 3. calculate green's function in fourier space */ 
   /* 4. reverse transformation using fftw_plan_dft_c2r_3d() and fftw_execute() */
 }
 
 /* Update position, velocities for each particle */ 
-void updateParticles(int ngrid, int npart, double a, double da, double *x, double *y, double *z, double *vx, double *vy, double *vz, double ***phi){     
-  /* 1. declarations of relevant variables */ 
-  /* 2. calculate particle accelerations from phi */ 
-  /* 3. update particle velocities */ 
-  /* 4. update particle positions */ 
+void updateParticles(int ngrid, int npart, double a, double da, double *x, double *y, double *z, double *vx, double *vy, double *vz, double ***phi)
+{
+  for (int abc = 0; abc < npart; abc++){
+    /* 1. declarations of relevant variables */ 
+    int i = static_cast<int>(floor(*x));
+    int j = static_cast<int>(floor(*y));
+    int k = static_cast<int>(floor(*z));
+    /* 2. calculate particle accelerations from phi */ 
+    //check boundary conditions?
+    double gx = -(*(*(*(phi + (i - 1)) + j ) + k) - *(*(*(phi + (i + 1))+j)+k))/2.0;
+    double gy = -(*(*(*(phi + i) + (j+1)) + k ) - *(*(*(phi + i) +(j-1)) + k) ) /2.0;
+    double gz = -(*(*(*(phi + i) + j) + (k+1)) - *(*(*(phi + i) + j) + (k-1) ) )/2.0;
+    /* 3. update particle velocities */
+    *vx = *(vx) + f(a) * gx * da;
+    *vy = *(vy) + f(a) * gy * da;
+    *vz = *(vz) + f(a) * gz * da;
+    /* 4. update particle positions */ 
+    *x = *x + pow((a+da/2.0), -2) * f(a + da/2.0) * *vx * da;
+    *y = *y + pow((a+da/2.0), -2) * f(a + da/2.0) * *vy * da;
+    *z = *z + pow((a+da/2.0), -2) * f(a + da/2.0) * *vz * da;
+
+    //Move to the next particle
+    x++;
+    y++;
+    z++;
+    vx++;
+    vy++;
+    vz++;
+  }
 }
