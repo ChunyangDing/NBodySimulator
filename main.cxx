@@ -16,23 +16,32 @@ int main()
   const double OmegaM = 0.27;
   const double OmegaL = 0.73;
   const double OmegaK = 0.0000824;
-  double x[ngrid];
-  double y[ngrid];
-  double z[ngrid];
+  const double G = 6.6740831 * pow(10, -11);
+  const double rhoCrit = 1.06 * pow(10, -29);
+  const double H = 67.80;
+
+  const double r0 = 1;
+  const double t0 = 1/H;
+  const double v0 = r0 / t0;
+  const double rho0 = ((3 * pow(H, 2)) / (8 * M_PI * G)) * OmegaM;
+  const double phi0 = pow(v0, 2);
+
+  double x[npart]; //Should describe every particle
+  double y[npart];
+  double z[npart];
   
-  double vx[ngrid];
-  double vy[ngrid];
-  double vz[ngrid];
+  double vx[npart];
+  double vy[npart];
+  double vz[npart];
   
-  double rho[2][3][ngrid];    // I don't really know what is going on here.... at all.
-  double phi[10][10][10];     // ditto
+  double rho[ngrid][ngrid][ngrid];    // Should describe mass density for each cell??
+  double phi[ngrid][ngrid][ngrid];     // Should have unique density for each cell
   
-  double a;     // don't know what this is (scale parameter?)
-  double da;    // time-stepping parameter?
+  double a;     // Should be the scale parameter, usually = 1
+  double da;    // Some small change correlated with time step.
   
   
   //There are a lot of variables that are used throughout here...
-  //double G = 6.6740831 * pow(10, -11);
   
   /* 2. read in or setup initial conditions */
   
@@ -66,7 +75,7 @@ int main()
       // to file?
       
       /* 7. call updateParticles() */ 
-      updateParticles(ngrid, npart, a, da, x, y, z, vx, vy, vz, phi);
+      updateParticles(ngrid, npart, a, da,&x[0], &y[0], &z[0], &vx[0], &vy[0], &vz[0], &phi[0][0][0]);
       
       /* end loop */ 
     }
@@ -109,8 +118,8 @@ void updateParticles(int ngrid, int npart, double a, double da, double *x, doubl
     double gx = 0;
     double gy = 0;
     double gz = 0;
-    /* 2. calculate particle accelerations from phi */ 
-    //check boundary conditions?
+
+    /* 2. calculate particle accelerations from phi */
     if (i == 0){
       gx = -(*(*(*(phi + (i)) + j ) + k) - *(*(*(phi + (i + 1))+j)+k))/2.0;
     }
