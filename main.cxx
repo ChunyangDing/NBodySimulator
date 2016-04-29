@@ -1,15 +1,66 @@
 /* Include any necessary .h files, such as math.h, stdio.h, etc */ 
-#include <fftw3.h> 
+#include <fftw3.h>
+#include <cmath> // for pow() 
 int main() 
 {
   /* 1. declarations of relevant variables */
+  const int ngrid=pow(64,1); // supposed to be 64**3, but don't want to break things with big numbers...
+  const int npart=pow(32,1); // supposed to be 32**3, but big numbers are bad when you make mistakes...
+
+  const int TMAX=100; // number of timesteps
+
+  double x[ngrid];
+  double y[ngrid];
+  double z[ngrid];
+
+  double vx[ngrid];
+  double vy[ngrid];
+  double vz[ngrid];
+
+  double rho[2][3][ngrid];    // I don't really know what is going on here.... at all.
+  double phi[10][10][10];     // ditto
+
+  double a;     // don't know what this is (scale parameter?)
+  double da;    // time-stepping parameter?
+
+
   /* 2. read in or setup initial conditions */
+
+// I think this part is explained in the hand-out
+// I have it set up in loops write now just so there is something in the arrays
+  for (int i=0; i<ngrid; i++)
+    {
+      x[i]=1;
+      y[i]=1;
+      z[i]=1;
+
+      vx[i]=0;     
+      vy[i]=0;
+      vz[i]=0;
+    }
+
+
   /* 3. start loop over time steps */ 
-  /* 4. call cicInterpolate() */ 
-  /* 5. call solvePoisson() */ 
-  /* 6. write out data*/ 
-  /* 7. call updateParticles() */ 
-  /* end loop */ 
+
+  for (int t=0; t<TMAX; t++)
+
+  { 
+    /* 4. call cicInterpolate() */ 
+
+    cicInterpolate(ngrid, npart, x, y, z, rho);
+
+    /* 5. call solvePoisson() */ 
+
+    solvePoisson(a, rho, phi, ngrid);
+
+    /* 6. write out data*/ 
+    // to file?
+
+    /* 7. call updateParticles() */ 
+    updateParticles(ngrid, npart, a, da, x, y, z, vx, vy, vz, phi);
+
+    /* end loop */ 
+  }
 }
 /*
  *Calculate contribution of each particle to the density grid points using the CIC interpolation.
