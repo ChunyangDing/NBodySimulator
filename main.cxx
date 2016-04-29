@@ -12,7 +12,10 @@ int main()
   const int npart=pow(32,1); // supposed to be 32**3, but big numbers are bad when you make mistakes...
   
   const int TMAX=100; // number of timesteps
-  
+
+  const double OmegaM = 0.27;
+  const double OmegaL = 0.73;
+  const double OmegaK = 0.0000824;
   double x[ngrid];
   double y[ngrid];
   double z[ngrid];
@@ -103,11 +106,46 @@ void updateParticles(int ngrid, int npart, double a, double da, double *x, doubl
     int i = static_cast<int>(floor(*x));
     int j = static_cast<int>(floor(*y));
     int k = static_cast<int>(floor(*z));
+    double gx = 0;
+    double gy = 0;
+    double gz = 0;
     /* 2. calculate particle accelerations from phi */ 
     //check boundary conditions?
-    double gx = -(*(*(*(phi + (i - 1)) + j ) + k) - *(*(*(phi + (i + 1))+j)+k))/2.0;
-    double gy = -(*(*(*(phi + i) + (j+1)) + k ) - *(*(*(phi + i) +(j-1)) + k) ) /2.0;
-    double gz = -(*(*(*(phi + i) + j) + (k+1)) - *(*(*(phi + i) + j) + (k-1) ) )/2.0;
+    if (i == 0){
+      gx = -(*(*(*(phi + (i)) + j ) + k) - *(*(*(phi + (i + 1))+j)+k))/2.0;
+    }
+    else {
+      if (i == ngrid){
+	gx = -(*(*(*(phi + (i - 1)) + j ) + k) - *(*(*(phi + (i))+j)+k))/2.0;      
+      }
+      else{
+	gx = -(*(*(*(phi + (i - 1)) + j ) + k) - *(*(*(phi + (i + 1))+j)+k))/2.0;
+      }
+    }
+
+    if (j == 0){
+      gy = -(*(*(*(phi + i) + (j+1)) + k ) - *(*(*(phi + i) +(j)) + k) ) /2.0;
+    }
+    else {
+      if (j == ngrid){
+	gy = -(*(*(*(phi + i) + (j)) + k ) - *(*(*(phi + i) +(j-1)) + k) ) /2.0;
+      }
+      else{
+	gy = -(*(*(*(phi + i) + (j+1)) + k ) - *(*(*(phi + i) +(j-1)) + k) ) /2.0;
+      }
+    }
+
+    if (k == 0){
+      gz = -(*(*(*(phi + i) + j) + (k+1)) - *(*(*(phi + i) + j) + (k) ) )/2.0;
+    }
+    else {
+      if (k == ngrid){
+	gz = -(*(*(*(phi + i) + j) + (k)) - *(*(*(phi + i) + j) + (k-1) ) )/2.0;
+      }
+      else {
+	gz = -(*(*(*(phi + i) + j) + (k+1)) - *(*(*(phi + i) + j) + (k-1) ) )/2.0;
+      }
+    }
     /* 3. update particle velocities */
     *vx = *(vx) + f(a) * gx * da;
     *vy = *(vy) + f(a) * gy * da;
@@ -125,4 +163,9 @@ void updateParticles(int ngrid, int npart, double a, double da, double *x, doubl
     vy++;
     vz++;
   }
+}
+
+int f(double a){
+  //Needs to be implemented as shown onbottom of p8
+  return pow((1 / a) * sqrt( OmegaM + OmegaK * a + OmegaL * pow(a, 2) ), -0.5)
 }
