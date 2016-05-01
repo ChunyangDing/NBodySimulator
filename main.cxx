@@ -18,6 +18,7 @@ int main()
   const double G = 6.6740831 * pow(10, -11);
   const double rhoCrit = 1.06 * pow(10, -29);
   const double H = 67.80;
+  const double pi = 3.141592654;
 
   const double r0 = 1;
   const double t0 = 1/H;
@@ -93,7 +94,8 @@ void cicInterpolate(int ngrid, int npart, double *x, double *y, double *z, doubl
 /*  Solve poisson's equations and calculate acceleration field  */ 
 void solvePoisson(double a, double ***rho, double ***phi, int ngrid) {
 
-  double G[ngrid][ngrid][ngrid];
+  double G[ngrid][ngrid][ngrid];      // Green's function
+  const double G_Const= -( 3*OMEGA/(8*a) ); // constant in front of greens
 
   // start with rho(i, j, k), loop over all space
   // FFT rho to fourier space
@@ -108,16 +110,16 @@ void solvePoisson(double a, double ***rho, double ***phi, int ngrid) {
     {
       for ( int n=-(0.5*ngrid); n<(0.5*ngrid + 1); n++ )
       {
-        G[l][m][n] = -( 3.0*OMEGA/(8*a) ) *pow(( pow( sin( (M_PI*l/L) ), 2) + pow( sin( (M_PI*m/L) ), 2) + pow( sin(M_PI*n/L), 2) ), -1);
+        G[l][m][n] = pow(sin(pi*l/L), 2) + pow(sin(pi*m/L), 2) + pow(sin(pi*n/L), 2);
+        G[l][m][n] = G_Const * pow(G[l][m][n], -1);
+
         phi[l][m][n] = G[l][m][n] * rho_fft[l][m][n];
       }
     }
   }
 
-
-
   // transform back into real space
-  
+  phi = fftw3(phi);
 
 
 }
