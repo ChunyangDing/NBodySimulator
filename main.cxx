@@ -91,23 +91,35 @@ void cicInterpolate(int ngrid, int npart, double *x, double *y, double *z, doubl
 }
 
 /*  Solve poisson's equations and calculate acceleration field  */ 
-void solvePoisson(double a, double ***rho, double ***phi, int ngrid) { 
-  /* 1. declarations of relevant variables */ 
+void solvePoisson(double a, double ***rho, double ***phi, int ngrid) {
 
-  double 
+  double G[ngrid][ngrid][ngrid];
+
+  // start with rho(i, j, k), loop over all space
+  // FFT rho to fourier space
+
+  rho_fft = fftw3(rho); // loops internally
+
+  // calulcate G
+    // loop over cells l,m,n (In Fourier space!)
+  for ( int l=-(0.5*ngrid); l<(0.5*ngrid + 1); l++ )
+  {
+    for ( int m=-(0.5*ngrid); m<(0.5*ngrid + 1); m++ )
+    {
+      for ( int n=-(0.5*ngrid); n<(0.5*ngrid + 1); n++ )
+      {
+        G[l][m][n] = -( 3.0*OMEGA/(8*a) ) *pow(( pow( sin( (M_PI*l/L) ), 2) + pow( sin( (M_PI*m/L) ), 2) + pow( sin(M_PI*n/L), 2) ), -1);
+        phi[l][m][n] = G[l][m][n] * rho_fft[l][m][n];
+      }
+    }
+  }
+
+
+
+  // transform back into real space
   
-  /* 2. fourier transform rho into fourier space 
-     We suggest looking to the fftw_plan_dft_r2c_3d() function for this transform. 
-     Any fourier transform in fftw is then followed by the execution command.  
-     For example: */
 
-     // setup fftw plan 
-     pf = fftw_plan_dft_r2c_3d(ngrid, ngrid, ngrid, in, out, FFTW_ESTIMATE); 
-     // take fourier transform
-     fftw_execute(pf); 
 
-  /* 3. calculate green's function in fourier space */ 
-  /* 4. reverse transformation using fftw_plan_dft_c2r_3d() and fftw_execute() */
 }
 
 /* Update position, velocities for each particle */ 
