@@ -1,7 +1,6 @@
 /* Include any necessary .h files, such as math.h, stdio.h, etc */ 
 #include <fftw3.h>
-#include <cmath> // for pow() 
-#include <math.h> // for floor()
+#include <math.h> // for floor(), pow()
 
 using namespace std;
 
@@ -94,15 +93,19 @@ void cicInterpolate(int ngrid, int npart, double *x, double *y, double *z, doubl
 /*  Solve poisson's equations and calculate acceleration field  */ 
 void solvePoisson(double a, double ***rho, double ***phi, int ngrid) { 
   /* 1. declarations of relevant variables */ 
+
+  double 
+  
   /* 2. fourier transform rho into fourier space 
      We suggest looking to the fftw_plan_dft_r2c_3d() function for this transform. 
      Any fourier transform in fftw is then followed by the execution command.  
-     For example: 
+     For example: */
+
      // setup fftw plan 
      pf = fftw_plan_dft_r2c_3d(ngrid, ngrid, ngrid, in, out, FFTW_ESTIMATE); 
      // take fourier transform
      fftw_execute(pf); 
-  */
+
   /* 3. calculate green's function in fourier space */ 
   /* 4. reverse transformation using fftw_plan_dft_c2r_3d() and fftw_execute() */
 }
