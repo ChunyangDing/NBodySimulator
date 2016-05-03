@@ -1,12 +1,13 @@
 CC = g++
 PRODUCTFLAGS=-Wall -pedantic
+LINKFLAGS=-lfftw3 -lm
 DEBUGFLAGS=-g
 TARGET=main
 
 #Use this option to debug code.
 #Make sure the code compiles without warning under this option before using 'make final'.
 production: main.cxx
-	${CC} main.cxx ${DEBUGFLAGS} ${PRODUCTFLAGS} ${TARGET}
+	${CC} main.cxx ${DEBUGFLAGS} ${LINKFLAGS} ${PRODUCTFLAGS} ${TARGET}
 
 #Use this to compile the final product.
 final: main.cxx

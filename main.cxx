@@ -20,6 +20,7 @@ int main()
   const double G = 6.6740831 * pow(10, -11);
   const double rhoCrit = 1.06 * pow(10, -29);
   const double H = 67.80;
+  const double pi = 3.141592654;
 
   const double r0 = 1;
   const double t0 = 1/H;
@@ -88,28 +89,83 @@ int main()
  */ 
 
 void cicInterpolate(int ngrid, int npart, double *x, double *y, double *z, double ***rho) { 
-  /* 1. declarations of relevant variables */ 
-  /* 2. loop over particles and apply the CIC interpolation to calculate density of each cell */
+    //declare parent cell locations
+    int pcx, pcy, pcz;
+    
+    //declare distances from particle to cell (note that t_x/y/z is not explicitly defined but only used as '1 - d')
+    int dx, dy, dz;
+    
+    //declare the factors that will be used for mass assignment (either dx or tx)
+    int xfactor, yfactor, zfactor;
+    
+    //loop over particles
+    for (int counter=0; counter<npart; counter++) {
+        //get parent cell locations
+        pcx = floor(x[counter]);
+        pcy = floor(y[counter]);
+        pcz = floor(z[counter]);
+        
+        //loop over relevant cells
+        for (int i=pcx; i<pcx+2; i++) {
+            //get the d and t variable for x
+            dx = x[counter] - i;
+            //if on the first iteration of x set the xfactor to tx, on the second iteration to dx
+            if ((pcx - i) % 2 == 0) {xfactor = 1 - dx;}
+            else {xfactor = dx;}
+            for (int j=pcy; j<pcy+2; j++) {
+                //get the d and t variable for y
+                dy = y[counter] - j;
+                //if on the first iteration of y set the yfactor to ty, on the second iteration to dy
+                if ((pcy - i) % 2 == 0) {yfactor = 1 - dy;}
+                else {yfactor = dy;}
+                for (int k=pcz; k<pcz+2; k++) {
+                    //get the d and t variable for z
+                    dz = z[counter] - k;
+                    //if on the first iteration of z set the zfactor to tz, on the second iteration to dz
+                    if ((pcz - i) % 2 == 0) {zfactor = 1 - dz;}
+                    else {zfactor = dz;}
+                    
+                    //now increment the mass of the appropriate rho index (assuming mass = 1)
+                    rho[i % ngrid][j % ngrid][k % ngrid] += xfactor*yfactor*zfactor;
+                }
+            }
+        }
+        //now switch to the next particle
+        counter++;
+    }
 }
 
 /*  Solve poisson's equations and calculate acceleration field  */ 
-void solvePoisson(double a, double ***rho, double ***phi, int ngrid) { 
-  /* 1. declarations of relevant variables */ 
+void solvePoisson(double a, double ***rho, double ***phi, int ngrid) {
 
-  double 
-  
-  /* 2. fourier transform rho into fourier space 
-     We suggest looking to the fftw_plan_dft_r2c_3d() function for this transform. 
-     Any fourier transform in fftw is then followed by the execution command.  
-     For example: */
+  double G[ngrid][ngrid][ngrid];      // Green's function
+  const double G_Const= -( 3*OMEGA/(8*a) ); // constant in front of greens
 
-     // setup fftw plan 
-     pf = fftw_plan_dft_r2c_3d(ngrid, ngrid, ngrid, in, out, FFTW_ESTIMATE); 
-     // take fourier transform
-     fftw_execute(pf); 
+  // start with rho(i, j, k), loop over all space
+  // FFT rho to fourier space
 
-  /* 3. calculate green's function in fourier space */ 
-  /* 4. reverse transformation using fftw_plan_dft_c2r_3d() and fftw_execute() */
+  rho_fft = fftw3(rho); // loops internally
+
+  // calulcate G
+    // loop over cells l,m,n (In Fourier space!)
+  for ( int l=-(0.5*ngrid); l<(0.5*ngrid + 1); l++ )
+  {
+    for ( int m=-(0.5*ngrid); m<(0.5*ngrid + 1); m++ )
+    {
+      for ( int n=-(0.5*ngrid); n<(0.5*ngrid + 1); n++ )
+      {
+        G[l][m][n] = pow(sin(pi*l/L), 2) + pow(sin(pi*m/L), 2) + pow(sin(pi*n/L), 2);
+        G[l][m][n] = G_Const * pow(G[l][m][n], -1);
+
+        phi[l][m][n] = G[l][m][n] * rho_fft[l][m][n];
+      }
+    }
+  }
+
+  // transform back into real space
+  phi = fftw3(phi);
+
+
 }
 
 /* Update position, velocities for each particle */ 
