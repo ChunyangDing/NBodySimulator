@@ -1,6 +1,8 @@
 /* Include any necessary .h files, such as math.h, stdio.h, etc */ 
 #include <fftw3.h>
 #include <math.h> // for floor(), pow()
+#include <iostream>
+
 
 using namespace std;
 
@@ -179,5 +181,5 @@ void updateParticles(int ngrid, int npart, double a, double da, double *x, doubl
 
 int f(double a){
   //Needs to be implemented as shown onbottom of p8
-  return pow((1 / a) * sqrt( OmegaM + OmegaK * a + OmegaL * pow(a, 2) ), -0.5)
+  return pow((1 / a) * sqrt( OmegaM + OmegaK * a + OmegaL * pow(a, 2) ), -0.5);
 }
