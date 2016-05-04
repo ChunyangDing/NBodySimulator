@@ -1,3 +1,34 @@
+/*   
+ *  Questions
+ *
+ * 1. What the heck are our initial conditions?
+ *    What even do we have to initialize?
+ *        - x,y,z positions for all particles
+ *        - vx, vy, vz velocities for all particles
+ *    Ok but,
+ *
+ * 2. What are the dimensions of our simulation?
+ *    i.e. the positions of the particles are from
+ *         what to what? -10 < x < 10????
+ *    Also, what unit is x in? (probably unitless)
+ *
+ * 3. What are we using as unit of time? We have t and TMAX,
+ *    but a and da. When we loop it doesn't matter as long
+ *    as we know how bit each time-step is and how much total
+ *    time is passing.
+ *
+ * 4. Why is H the only thing not in SI units?
+ *
+ * 5. 
+ *
+ *
+ *
+ *
+ */
+
+
+
+
 /* Include any necessary .h files, such as math.h, stdio.h, etc */ 
 #include <fftw3.h>
 #include <math.h> // for floor(), pow()
@@ -15,24 +46,27 @@ int f(double a);
 int main() 
 {
   /* 1. declarations of relevant variables */
-  const int ngrid=pow(64,1); // supposed to be 64**3, but don't want to break things with big numbers...
-  const int npart=pow(32,1); // supposed to be 32**3, but big numbers are bad when you make mistakes...
-  
+  const int ngrid=pow(64,3);
+  const int npart=pow(32,3);
+
   const int TMAX=100; // number of timesteps
 
   const double OmegaM = 0.27;
   const double OmegaL = 0.73;
   const double OmegaK = 0.0000824;
   const double G = 6.6740831 * pow(10, -11);
-  const double rhoCrit = 1.06 * pow(10, -29);
+  //const double rhoCrit = 1.06 * pow(10, -29);
   const double H = 67.80;
   const double pi = 3.141592654;
 
-  const double r0 = 1;
-  const double t0 = 1/H;
-  const double v0 = r0 / t0;
-  const double rho0 = ((3 * pow(H, 2)) / (8 * M_PI * G)) * OmegaM;
-  const double phi0 = pow(v0, 2);
+  ///////////////////////////////////////////////////////////////
+  // when are these variables ever used?????
+  //const double r0 = 1;
+  //const double t0 = 1/H;
+  //const double v0 = r0 / t0;
+  //const double rho0 = ((3 * pow(H, 2)) / (8 * pi * G)) * OmegaM;
+  //const double phi0 = pow(v0, 2);
+  ////////////////////////////////////////////////////////////////
 
   double x[npart]; //Should describe every particle
   double y[npart];
@@ -42,7 +76,7 @@ int main()
   double vy[npart];
   double vz[npart];
   
-  double rho[ngrid][ngrid][ngrid];    // Should describe mass density for each cell??
+  double rho[ngrid][ngrid][ngrid];    // Should describe mass density for each cell
   //double phi[ngrid][ngrid][ngrid];     // Should have unique density for each cell
   
   int *** phi;
@@ -126,7 +160,7 @@ void cicInterpolate(int ngrid, int npart, double *x, double *y, double *z, doubl
     //loop over particles
     for (int counter=0; counter<npart; counter++) {
         //get parent cell locations
-         pcx = floor(x[counter]);
+        pcx = floor(x[counter]);
         pcy = floor(y[counter]);
         pcz = floor(z[counter]);
         
