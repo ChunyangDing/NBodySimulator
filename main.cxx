@@ -6,6 +6,12 @@
 
 using namespace std;
 
+//Don't forget to create function templates up here!
+void cicInterpolate(int ngrid, int npart, double *x, double *y, double *z, double ***rho);
+void solvePoisson(double a, double ***rho, double ***phi, int ngrid);
+void updateParticles(int ngrid, int npart, double a, double da, double *x, double *y, double *z, double *vx, double *vy, double *vz, double ***phi);
+int f(double a);
+
 int main() 
 {
   /* 1. declarations of relevant variables */
@@ -37,10 +43,29 @@ int main()
   double vz[npart];
   
   double rho[ngrid][ngrid][ngrid];    // Should describe mass density for each cell??
-  double phi[ngrid][ngrid][ngrid];     // Should have unique density for each cell
+  //double phi[ngrid][ngrid][ngrid];     // Should have unique density for each cell
   
-  double a;     // Should be the scale parameter, usually = 1
-  double da;    // Some small change correlated with time step.
+  int *** phi;
+  phi = new int**[ngrid];
+  for (int i = 0; i < ngrid; i++){
+    phi[i] = new int*[ngrid];
+    for (int j = 0; j<ngrid; j++){
+      phi[i][j] = new int[ngrid];
+    }
+  }
+
+  int *** rho;
+  rho = new int**[ngrid];
+  for (int i = 0; i < ngrid; i++){
+    rho[i] = new int*[ngrid];
+    for (int j = 0; j<ngrid; j++){
+      rho[i][j] = new int[ngrid];
+    }
+  }
+
+  
+  double a = 1;     // Should be the scale parameter, usually = 1
+  double da = 1;    // Some small change correlated with time step.
   
   
   //There are a lot of variables that are used throughout here...
@@ -101,7 +126,7 @@ void cicInterpolate(int ngrid, int npart, double *x, double *y, double *z, doubl
     //loop over particles
     for (int counter=0; counter<npart; counter++) {
         //get parent cell locations
-        pcx = floor(x[counter]);
+         pcx = floor(x[counter]);
         pcy = floor(y[counter]);
         pcz = floor(z[counter]);
         
