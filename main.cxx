@@ -14,19 +14,14 @@
  *
  * 3. What are we using as unit of time? We have t and TMAX,
  *    but a and da. When we loop it doesn't matter as long
- *    as we know how bit each time-step is and how much total
+ *    as we know how big each time-step is and how much total
  *    time is passing.
  *
  * 4. Why is H the only thing not in SI units?
  *
  * 5. 
  *
- *
- *
- *
  */
-
-
 
 
 /* Include any necessary .h files, such as math.h, stdio.h, etc */ 
@@ -49,7 +44,7 @@ int main()
   const int ngrid=pow(64,3);
   const int npart=pow(32,3);
 
-  const int TMAX=100; // number of timesteps
+  //const int TMAX=100; // number of timesteps
 
   const double OmegaM = 0.27;
   const double OmegaL = 0.73;
@@ -79,23 +74,30 @@ int main()
   double rho[ngrid][ngrid][ngrid];    // Should describe mass density for each cell
   //double phi[ngrid][ngrid][ngrid];     // Should have unique density for each cell
   
-  int *** phi;
-  phi = new int**[ngrid];
-  for (int i = 0; i < ngrid; i++){
-    phi[i] = new int*[ngrid];
-    for (int j = 0; j<ngrid; j++){
-      phi[i][j] = new int[ngrid];
-    }
-  }
 
-  int *** rho;
-  rho = new int**[ngrid];
-  for (int i = 0; i < ngrid; i++){
-    rho[i] = new int*[ngrid];
-    for (int j = 0; j<ngrid; j++){
-      rho[i][j] = new int[ngrid];
-    }
-  }
+
+  /* Why would you do this?
+   * First of all, there are no /delete/'s anywhere
+   * Second, rho and phi are arrays so they
+   * are already defined as pointers.
+   */
+  // int *** phi;
+  // phi = new int**[ngrid];
+  // for (int i = 0; i < ngrid; i++){
+  //   phi[i] = new int*[ngrid];
+  //   for (int j = 0; j<ngrid; j++){
+  //     phi[i][j] = new int[ngrid];
+  //   }
+  // }
+
+  // int *** rho;
+  // rho = new int**[ngrid];
+  // for (int i = 0; i < ngrid; i++){
+  //   rho[i] = new int*[ngrid];
+  //   for (int j = 0; j<ngrid; j++){
+  //     rho[i][j] = new int[ngrid];
+  //   }
+  // }
 
   
   double a = 1;     // Should be the scale parameter, usually = 1
