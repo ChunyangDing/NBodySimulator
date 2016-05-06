@@ -1,4 +1,4 @@
-/*   
+/*
  *  Questions
  *
  * 1. What the heck are our initial conditions?
@@ -28,6 +28,7 @@
 #include <fftw3.h>
 #include <math.h> // for floor(), pow()
 #include <iostream>
+#include <vector>
 
 
 using namespace std;
@@ -71,11 +72,12 @@ int main()
   double vy[npart];
   double vz[npart];
   
-  double rho[ngrid][ngrid][ngrid];    // Should describe mass density for each cell
+  //Should be vectors now!
+  //double rho[ngrid][ngrid][ngrid];    // Should describe mass density for each cell
   //double phi[ngrid][ngrid][ngrid];     // Should have unique density for each cell
   
 
-
+  //Ignore all of this please :3
   /* Why would you do this?
    * First of all, there are no /delete/'s anywhere
    * Second, rho and phi are arrays so they
@@ -229,54 +231,76 @@ void solvePoisson(double a, double ***rho, double ***phi, int ngrid) {
 
 }
 
+//Some helper functions for calculating the g for the x, y, and z directions 
+double getGx(int i, int j, int k, vector<double> &phi){
+  if (i == 0){
+    gx = -0.5 * (phi[pow(ngrid, 2)* (ngrid - 1) + ngrid * j + k] - phi[pow(ngrid, 2) * (i + 1) + ngrid * j + k]);// i = ngrid - 1
+  }
+  else {
+    if (i == ngrid){
+      gx = - 0.5 * (phi[pow(ngrid, 2) * (i - 1) + ngrid * j + k] - phi[ngrid * j + k]); //i = 0  
+    }
+    else{
+      gx = -0.5 * (phi[pow(ngrid, 2) * (i - 1) + ngrid * j + k] - phi[pow(ngrid, 2) * (i + 1) + ngrid * j + k]); // The normal state
+    }
+  }
+}
+
+double getGy(int i, int j, int k, vector<double> &phi){
+  if (j == 0){
+    gy = -0.5 *(phi[pow(ngrid, 2)* i + ngrid * (ngrid - 1) + k] - phi[pow(ngrid, 2) * i + ngrid * (j+1) + k]);// j = ngrid - 1
+  }
+  else {
+    if (j == ngrid){
+      gy = -0.5 * (phi[pow(ngrid, 2) * i + ngrid * (j - 1) + k] - phi[pow(ngrid, 2) * i + k]); // j = 0
+    }
+    else{
+      gy = -0.5 * (phi[pow(ngrid, 2) * i + ngrid * (j - 1) + k] - phi[pow(ngrid, 2) * i + ngrid * (j + 1) + k]); // normal
+    }
+  }
+}
+
+double getGz(int i, int j, int k, vector<double> &phi){
+  if (k == 0){
+    gz = -0.5 * (phi[pow(ngrid, 2) * i + ngrid * j + (ngrid - 1)] - phi[pow(ngrid, 2) * + ngrid * j + (k + 1)]); // k = ngrid - 1
+  }
+  else {
+    if (k == ngrid){
+      gz = -0.5 * (phi[pow(ngrid, 2) * i + ngrid * j + (k - 1)] - phi[pow(ngrid, 2) * i + ngrid * j]); // k = 0
+    }
+    else {
+      gz = -0.5 * (phi[pow(ngrid, 2) * i + ngrid * j + (k - 1)] - phi[pow(ngrid, 2) * i + ngrid * j + (k + 1)] ); //normal
+    }
+  }
+}
+
+
 /* Update position, velocities for each particle */ 
-void updateParticles(int ngrid, int npart, double a, double da, double *x, double *y, double *z, double *vx, double *vy, double *vz, double ***phi)
+void updateParticles(int ngrid, int npart, double a, double da, double *x, double *y, double *z, double *vx, double *vy, double *vz, vector<double> &phi)
 {
   for (int abc = 0; abc < npart; abc++){
     /* 1. declarations of relevant variables */ 
     int i = static_cast<int>(floor(*x));
     int j = static_cast<int>(floor(*y));
     int k = static_cast<int>(floor(*z));
+
+    double dx = *x - i;
+    double dy = *y - i;
+    double dz = *z - i;
+
+    double tx = 1 - dx;
+    double ty = 1 - dy; 
+    double tz = 1 - dz;
+
     double gx = 0;
     double gy = 0;
     double gz = 0;
 
     /* 2. calculate particle accelerations from phi */
-    if (i == 0){
-      gx = -(*(*(*(phi + (i)) + j ) + k) - *(*(*(phi + (i + 1))+j)+k))/2.0;
-    }
-    else {
-      if (i == ngrid){
-	gx = -(*(*(*(phi + (i - 1)) + j ) + k) - *(*(*(phi + (i))+j)+k))/2.0;      
-      }
-      else{
-	gx = -(*(*(*(phi + (i - 1)) + j ) + k) - *(*(*(phi + (i + 1))+j)+k))/2.0;
-      }
-    }
+    gx = getGx(i, j, k, phi) * tx * ty * tz + getGx(i+1, j, k, phi) * dx * ty * tz + getGx(i, j+1, k, phi) * tx * dy * tz + getGx(i + 1, j+1, k. phi) * dx * dy * tz + getGx(i, j, k+1, phi)* tx * ty * dz + getGx(i+1, j, k+1, phi) * dx * ty * dz + getGx(i, j+1, k+1, phi) * tx * dy * dz + getGx(i + 1, j+1, k+1, phi) * dx * dy * dz;
+    gy = getGy(i, j, k, phi) * tx * ty * tz + getGy(i+1, j, k, phi) * dx * ty * tz + getGy(i, j+1, k, phi) * tx * dy * tz + getGy(i + 1, j+1, k. phi) * dx * dy * tz + getGy(i, j, k+1, phi)* tx * ty * dz + getGy(i+1, j, k+1, phi) * dx * ty * dz + getGy(i, j+1, k+1, phi) * tx * dy * dz + getGy(i + 1, j+1, k+1, phi) * dx * dy * dz;
+    gz = getGz(i, j, k, phi) * tx * ty * tz + getGz(i+1, j, k, phi) * dx * ty * tz + getGz(i, j+1, k, phi) * tx * dy * tz + getGz(i + 1, j+1, k. phi) * dx * dy * tz + getGz(i, j, k+1, phi)* tx * ty * dz + getGz(i+1, j, k+1, phi) * dx * ty * dz + getGz(i, j+1, k+1, phi) * tx * dy * dz + getGz(i + 1, j+1, k+1, phi) * dx * dy * dz;
 
-    if (j == 0){
-      gy = -(*(*(*(phi + i) + (j+1)) + k ) - *(*(*(phi + i) +(j)) + k) ) /2.0;
-    }
-    else {
-      if (j == ngrid){
-	gy = -(*(*(*(phi + i) + (j)) + k ) - *(*(*(phi + i) +(j-1)) + k) ) /2.0;
-      }
-      else{
-	gy = -(*(*(*(phi + i) + (j+1)) + k ) - *(*(*(phi + i) +(j-1)) + k) ) /2.0;
-      }
-    }
-
-    if (k == 0){
-      gz = -(*(*(*(phi + i) + j) + (k+1)) - *(*(*(phi + i) + j) + (k) ) )/2.0;
-    }
-    else {
-      if (k == ngrid){
-	gz = -(*(*(*(phi + i) + j) + (k)) - *(*(*(phi + i) + j) + (k-1) ) )/2.0;
-      }
-      else {
-	gz = -(*(*(*(phi + i) + j) + (k+1)) - *(*(*(phi + i) + j) + (k-1) ) )/2.0;
-      }
-    }
     /* 3. update particle velocities */
     *vx = *(vx) + f(a) * gx * da;
     *vy = *(vy) + f(a) * gy * da;
@@ -294,7 +318,7 @@ void updateParticles(int ngrid, int npart, double a, double da, double *x, doubl
     vy++;
     vz++;
 
-    a = a + da; 
+    a = a + da; //Updates a accordingly
   }
 }
 
