@@ -100,8 +100,8 @@ int main()
   // }
 
   
-  double a = 1;     // Should be the scale parameter, usually = 1
-  double da = 1;    // Some small change correlated with time step.
+  double a = 0.1;     // Should be the scale parameter, usually = 1
+  double da = 0.01;    // Some small change correlated with time step.
   
   
   //There are a lot of variables that are used throughout here...
@@ -293,6 +293,8 @@ void updateParticles(int ngrid, int npart, double a, double da, double *x, doubl
     vx++;
     vy++;
     vz++;
+
+    a = a + da; 
   }
 }
 
