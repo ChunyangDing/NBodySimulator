@@ -102,9 +102,8 @@ int main()
   }
   
   
-  /* 3. start loop over time steps */ 
-  
-  for (int t=0; t<TMAX; t++)
+  // loop over time-steps
+  while ( a < aMAX )
     { 
       /* 4. call cicInterpolate() */ 
       
@@ -121,7 +120,9 @@ int main()
       updateParticles(ngrid, npart, a, da,&x[0], &y[0], &z[0], &vx[0], &vy[0], &vz[0], &phi[0][0][0]);
       
       /* end loop */ 
+      a = a + da;
     }
+
 }
 /*
  *Calculate contribution of each particle to the density grid points using the CIC interpolation.
