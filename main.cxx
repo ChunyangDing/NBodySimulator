@@ -1,19 +1,67 @@
 #include <fftw3.h>
 #include <math.h> // for floor(), pow()
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <stdlib.h> // for malloc, drand48()
 
 using namespace std;
 
 // function prototypes
-void cicInterpolate(int ngrid, int npart, double *x, double *y, double *z, double ***rho);
-void solvePoisson(double a, double ***rho, double ***phi, int ngrid);
+void cicInterpolate(int ngrid, int npart, double *x, double *y, double *z, vector<double>& rho);
+void solvePoisson(double a, vector<double>& rho,  vector<double>& phi, int ngrid);
 void updateParticles(int ngrid, int npart, double a, double da, double *x, double *y, double *z, double *vx, double *vy, double *vz, double ***phi);
 int f(double a);
 
-int main()
+void usage(const char* prog) {
+    cerr << "Usage: " << prog << " [-V] [-h] [fileName]" << endl;
+}
+
+int main(int argc, char* argv[]) {
 {
+  int ch;
+  //update code version if any changes are made to the code
+  char version[] = "v.74";
+  
+  while ((ch = getopt(argc, argv,"Vh")) != -1) {
+        //note that there break statements are redundant for cases when the program is quitted
+    switch (ch) {
+      case 'V':
+        cout << "Version of code: " << version << endl;
+        //quit the program if 'V' is passed.
+        return 0;
+      case 'h':
+        cout << "This program will simulate dark matter based on given input conditions and constants.  It will create a text file at the end with the coordinates and velocities of each particle at each time-step.  Please call the program in the following way:" << endl;
+        usage(argv[0]);
+        cout << "All the arguments in the program are optional.\n-V\tprints the program version and quits\n-h\tprints instructions for the program and quits.\n[fileName]\t is an optional argument to specify the name of the output file." << endl;
+        //quit the program if 'h' is passed.
+        return 0;
+      case '?':
+        //call usage function if unkown option
+        cout << "You have passed an unspecified option.  Run code as '" << argv[0] << " -h' for help." << endl;
+				usage(argv[0]);
+        //return 2 and quit to specify that the program has did not recieve proper options
+        return 2;
+      }
+  }
+    
+  //now check for the file name
+  int optLeftOver = argc - optind;
+  if (optLeftOver > 1) {
+    cout << "You have entered more than one standard arguments or did not put [file] at the end.  Run code as '" << argv[0] << " -h' for help." << endl;
+    //return 2 and quit to specify that the program has did not recieve proper argument
+    return 2;
+  }
+    
+  //declare the output file
+  ofstream outFile;
+  //if there is one opt left then that will be the name, else the file will be named by default
+  if (optLeftOver == 1) {
+    outFile.open(argv[optind]);
+  }
+  else {outFile.open("out.txt");}
+
+
   // relevant variables
   const int ngrid = pow(64,1);
   const int npart = pow(32,1);
@@ -101,6 +149,8 @@ int main()
     vz[i]=0;  
   }
   
+  //Make a header for the outputfile
+  outFile << "ID\tx\ty\tz\tvx\tvy\tvz" << endl;
   
   // loop over time-steps
   while ( a < aMAX )
@@ -113,8 +163,11 @@ int main()
       
       solvePoisson(a, rho, phi, ngrid);
       
-      /* 6. write out data*/ 
-      // to file?
+      /* 6. write out data*/
+      outFile << "\nAt a = " << a;
+      for (int i=0; i<nPart; i++) {
+        outFile << "\n" << x[i] << " "  << y[i] << " "  << z[i] << " "  << vx[i] << " "  << vy[i] << " "  << vz[i];
+      }
       
       /* 7. call updateParticles() */ 
       updateParticles(ngrid, npart, a, da,&x[0], &y[0], &z[0], &vx[0], &vy[0], &vz[0], &phi[0][0][0]);
