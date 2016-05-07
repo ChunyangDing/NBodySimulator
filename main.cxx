@@ -18,7 +18,6 @@ void usage(const char* prog) {
 }
 
 int main(int argc, char* argv[]) {
-{
   int ch;
   //update code version if any changes are made to the code
   char version[] = "v.74";
@@ -97,10 +96,9 @@ int main(int argc, char* argv[]) {
   double vx[npart];
   double vy[npart];
   double vz[npart];
-
-  //Should be vectors now!
-  //double rho[ngrid][ngrid][ngrid];    // Should describe mass density for each cell
-  //double phi[ngrid][ngrid][ngrid];     // Should have unique density for each cell
+  
+  vector<double> rho;    // Should describe mass density for each cell
+  vector<double> phi;     // Should have unique density for each cell
   
 
   // int *** phi;
@@ -165,12 +163,12 @@ int main(int argc, char* argv[]) {
       
       /* 6. write out data*/
       outFile << "\nAt a = " << a;
-      for (int i=0; i<nPart; i++) {
+      for (int i=0; i<npart; i++) {
         outFile << "\n" << x[i] << " "  << y[i] << " "  << z[i] << " "  << vx[i] << " "  << vy[i] << " "  << vz[i];
       }
       
       /* 7. call updateParticles() */ 
-      updateParticles(ngrid, npart, a, da,&x[0], &y[0], &z[0], &vx[0], &vy[0], &vz[0], &phi[0][0][0]);
+      updateParticles(ngrid, npart, a, da,&x[0], &y[0], &z[0], &vx[0], &vy[0], &vz[0], phi);
       
       /* end loop */ 
       a = a + da;
@@ -183,7 +181,7 @@ int main(int argc, char* argv[]) {
  *Each particle contributes to the cell it is in and the neighboring grid cells based on the
  *algorithm in Section 2.8 of the write-up.
  */ 
-cicInterpolate(int ngrid, int npart, double *x, double *y, double *z, vector<double>& rho) {
+void cicInterpolate(int ngrid, int npart, double *x, double *y, double *z, vector<double>& rho) {
     //declare parent cell locations
     int pcx, pcy, pcz;
     
