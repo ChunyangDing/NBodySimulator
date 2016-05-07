@@ -123,6 +123,7 @@ int main()
       a = a + da;
     }
 
+    return 0;
 }
 /*
  *Calculate contribution of each particle to the density grid points using the CIC interpolation.
