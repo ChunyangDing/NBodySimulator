@@ -2,21 +2,21 @@
 #include <math.h> // for floor(), pow()
 #include <iostream>
 #include <vector>
-#include <stdlib.h>
+#include <stdlib.h> // for malloc, drand48()
 
 using namespace std;
 
-//Don't forget to create function templates up here!
+// function prototypes
 void cicInterpolate(int ngrid, int npart, double *x, double *y, double *z, double ***rho);
 void solvePoisson(double a, double ***rho, double ***phi, int ngrid);
 void updateParticles(int ngrid, int npart, double a, double da, double *x, double *y, double *z, double *vx, double *vy, double *vz, double ***phi);
 int f(double a);
 
-int main() 
+int main()
 {
   // relevant variables
-  const int ngrid = pow(64,3);
-  const int npart = pow(32,3);
+  const int ngrid = pow(64,1);
+  const int npart = pow(32,1);
 
   // cosmological variables
   const double OmegaM = 0.27;
@@ -25,19 +25,8 @@ int main()
   const double G = 6.6740831 * pow(10, -11);
   const double rhoCrit = 1.06 * pow(10, -29);
   const double H = 67.80;
+
   const double pi = 3.141592654;
-
-
-
-  double x[npart]; //Should describe every particle
-  double y[npart];
-  double z[npart];
-  
-  double vx[npart];
-  double vy[npart];
-  double vz[npart];
-  
-
 
   // variables for converting to actual units (we can ignore these for our purposes)
   //const double r0 = 1;
@@ -45,6 +34,21 @@ int main()
   //const double v0 = r0 / t0;
   //const double rho0 = ((3 * pow(H, 2)) / (8 * pi * G)) * OmegaM;
   //const double phi0 = pow(v0, 2);
+  const double L = 100.0; // scales the size of the model
+
+  // time-stepping variables
+  double a = 0.01;    // start when universe was 1% current size
+  double aMAX = 1.0;  // End when universe is 100% current size
+  double da = 0.01;   // Advance by 1% per time-step 
+
+  // Particle variables
+  double x[npart];
+  double y[npart];
+  double z[npart];
+
+  double vx[npart];
+  double vy[npart];
+  double vz[npart];
 
   //Should be vectors now!
   //double rho[ngrid][ngrid][ngrid];    // Should describe mass density for each cell
@@ -69,10 +73,6 @@ int main()
   //   }
   // }
 
-  
-  double a  = 0.1;     // Should be the scale parameter, usually = 1
-  double aMAX = 1.0
-  double da = 0.01;    // Some small change correlated with time step.
   
     
   /* 2. read in or setup initial conditions */
