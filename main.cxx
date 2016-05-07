@@ -1,35 +1,8 @@
-/*
- *  Questions
- *
- * 1. What the heck are our initial conditions?
- *    What even do we have to initialize?
- *        - x,y,z positions for all particles
- *        - vx, vy, vz velocities for all particles
- *    Ok but,
- *
- * 2. What are the dimensions of our simulation?
- *    i.e. the positions of the particles are from
- *         what to what? -10 < x < 10????
- *    Also, what unit is x in? (probably unitless)
- *
- * 3. What are we using as unit of time? We have t and TMAX,
- *    but a and da. When we loop it doesn't matter as long
- *    as we know how big each time-step is and how much total
- *    time is passing.
- *
- * 4. Why is H the only thing not in SI units?
- *
- * 5. 
- *
- */
-
-
-/* Include any necessary .h files, such as math.h, stdio.h, etc */ 
 #include <fftw3.h>
 #include <math.h> // for floor(), pow()
 #include <iostream>
 #include <vector>
-
+#include <stdlib.h>
 
 using namespace std;
 
@@ -41,12 +14,11 @@ int f(double a);
 
 int main() 
 {
-  /* 1. declarations of relevant variables */
-  const int ngrid=pow(64,3);
-  const int npart=pow(32,3);
+  // relevant variables
+  const int ngrid = pow(64,3);
+  const int npart = pow(32,3);
 
-  //const int TMAX=100; // number of timesteps
-
+  // cosmological variables
   const double OmegaM = 0.27;
   const double OmegaL = 0.73;
   const double OmegaK = 0.0000824;
@@ -55,14 +27,7 @@ int main()
   const double H = 67.80;
   const double pi = 3.141592654;
 
-  ///////////////////////////////////////////////////////////////
-  // when are these variables ever used?????
-  //const double r0 = 1;
-  //const double t0 = 1/H;
-  //const double v0 = r0 / t0;
-  //const double rho0 = ((3 * pow(H, 2)) / (8 * pi * G)) * OmegaM;
-  //const double phi0 = pow(v0, 2);
-  ////////////////////////////////////////////////////////////////
+
 
   double x[npart]; //Should describe every particle
   double y[npart];
@@ -72,17 +37,20 @@ int main()
   double vy[npart];
   double vz[npart];
   
+
+
+  // variables for converting to actual units (we can ignore these for our purposes)
+  //const double r0 = 1;
+  //const double t0 = 1/H;
+  //const double v0 = r0 / t0;
+  //const double rho0 = ((3 * pow(H, 2)) / (8 * pi * G)) * OmegaM;
+  //const double phi0 = pow(v0, 2);
+
   //Should be vectors now!
   //double rho[ngrid][ngrid][ngrid];    // Should describe mass density for each cell
   //double phi[ngrid][ngrid][ngrid];     // Should have unique density for each cell
   
 
-  //Ignore all of this please :3
-  /* Why would you do this?
-   * First of all, there are no /delete/'s anywhere
-   * Second, rho and phi are arrays so they
-   * are already defined as pointers.
-   */
   // int *** phi;
   // phi = new int**[ngrid];
   // for (int i = 0; i < ngrid; i++){
@@ -102,16 +70,13 @@ int main()
   // }
 
   
-  double a = 0.1;     // Should be the scale parameter, usually = 1
+  double a  = 0.1;     // Should be the scale parameter, usually = 1
+  double aMAX = 1.0
   double da = 0.01;    // Some small change correlated with time step.
   
-  
-  //There are a lot of variables that are used throughout here...
-  
+    
   /* 2. read in or setup initial conditions */
   
-  // I think this part is explained in the hand-out
-  // I have it set up in loops write now just so there is something in the arrays
   for (int i=0; i<ngrid; i++)
     {
       x[i]=1;
