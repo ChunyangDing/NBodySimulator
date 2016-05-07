@@ -75,18 +75,31 @@ int main()
 
   
     
-  /* 2. read in or setup initial conditions */
-  
+  // setup initial conditions
   for (int i=0; i<ngrid; i++)
-    {
-      x[i]=1;
-      y[i]=1;
-      z[i]=1;
-      
-      vx[i]=0;     
-      vy[i]=0;
-      vz[i]=0;
-    }
+  {
+    // start with uniform distribution
+    x[i]=drand48()*L;
+    y[i]=drand48()*L;
+    z[i]=drand48()*L; 
+
+    /* displace according to Zel'dovich
+     *
+     *  x = x0 + S(x0)
+     *
+     *  in our case (as per Darryl's suggestion)
+     *  we have S(x) = sin( 2*pi*x/L )
+     *
+     *  D+ = 1 (although perhaps D+ = a)
+     */
+    x[i] = x[i] + sin( 2*pi*x[i] / L);
+    y[i] = y[i] + sin( 2*pi*y[i] / L);
+    z[i] = z[i] + sin( 2*pi*z[i] / L);
+
+    vx[i]=0;  // initial velocities are all zero
+    vy[i]=0;  
+    vz[i]=0;  
+  }
   
   
   /* 3. start loop over time steps */ 
