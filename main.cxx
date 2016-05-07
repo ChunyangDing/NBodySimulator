@@ -10,8 +10,27 @@ using namespace std;
 // function prototypes
 void cicInterpolate(int ngrid, int npart, double *x, double *y, double *z, vector<double>& rho);
 void solvePoisson(double a, vector<double>& rho,  vector<double>& phi, int ngrid);
-void updateParticles(int ngrid, int npart, double a, double da, double *x, double *y, double *z, double *vx, double *vy, double *vz, double ***phi);
+double getGx(int i, int j, int k, vector<double> &phi);
+double getGy(int i, int j, int k, vector<double> &phi);
+double getGz(int i, int j, int k, vector<double> &phi);
+void updateParticles(int ngrid, int npart, double a, double da, double *x, double *y, double *z, double *vx, double *vy, double *vz, vector<double> &phi);
 int f(double a);
+
+// relevant variables
+const int ngrid = pow(64,1);
+const int npart = pow(32,1);
+
+// cosmological variables
+const double OmegaM = 0.27;
+const double OmegaL = 0.73;
+const double OmegaK = 0.0000824;
+const double G = 6.6740831 * pow(10, -11);
+const double rhoCrit = 1.06 * pow(10, -29);
+const double H = 67.80;
+
+const double pi = 3.141592654;
+
+const double L = 100.0; // scales the size of the model
 
 void usage(const char* prog) {
     cerr << "Usage: " << prog << " [-V] [-h] [fileName]" << endl;
@@ -60,28 +79,13 @@ int main(int argc, char* argv[]) {
   }
   else {outFile.open("out.txt");}
 
-
-  // relevant variables
-  const int ngrid = pow(64,1);
-  const int npart = pow(32,1);
-
-  // cosmological variables
-  const double OmegaM = 0.27;
-  const double OmegaL = 0.73;
-  const double OmegaK = 0.0000824;
-  const double G = 6.6740831 * pow(10, -11);
-  const double rhoCrit = 1.06 * pow(10, -29);
-  const double H = 67.80;
-
-  const double pi = 3.141592654;
-
   // variables for converting to actual units (we can ignore these for our purposes)
   //const double r0 = 1;
   //const double t0 = 1/H;
   //const double v0 = r0 / t0;
   //const double rho0 = ((3 * pow(H, 2)) / (8 * pi * G)) * OmegaM;
   //const double phi0 = pow(v0, 2);
-  const double L = 100.0; // scales the size of the model
+
 
   // time-stepping variables
   double a = 0.01;    // start when universe was 1% current size
@@ -98,28 +102,7 @@ int main(int argc, char* argv[]) {
   double vz[npart];
   
   vector<double> rho;    // Should describe mass density for each cell
-  vector<double> phi;     // Should have unique density for each cell
-  
-
-  // int *** phi;
-  // phi = new int**[ngrid];
-  // for (int i = 0; i < ngrid; i++){
-  //   phi[i] = new int*[ngrid];
-  //   for (int j = 0; j<ngrid; j++){
-  //     phi[i][j] = new int[ngrid];
-  //   }
-  // }
-
-  // int *** rho;
-  // rho = new int**[ngrid];
-  // for (int i = 0; i < ngrid; i++){
-  //   rho[i] = new int*[ngrid];
-  //   for (int j = 0; j<ngrid; j++){
-  //     rho[i][j] = new int[ngrid];
-  //   }
-  // }
-
-  
+  vector<double> phi;     // Should have unique density for each cell 
     
   // setup initial conditions
   for (int i=0; i<ngrid; i++)
@@ -151,7 +134,7 @@ int main(int argc, char* argv[]) {
   outFile << "ID\tx\ty\tz\tvx\tvy\tvz" << endl;
   
   // loop over time-steps
-  while ( a < aMAX )
+  while ( a < aMax )
     { 
       /* 4. call cicInterpolate() */ 
       
@@ -159,7 +142,7 @@ int main(int argc, char* argv[]) {
       
       /* 5. call solvePoisson() */ 
       
-      solvePoisson(a, rho, phi, ngrid);
+      //solvePoisson(a, rho, phi, ngrid);
       
       /* 6. write out data*/
       outFile << "\nAt a = " << a;
@@ -228,6 +211,7 @@ void cicInterpolate(int ngrid, int npart, double *x, double *y, double *z, vecto
 }
 
 /*  Solve poisson's equations and calculate acceleration field  */ 
+/*
 void solvePoisson(double a, double ***rho, double ***phi, int ngrid) {
 
   double G[ngrid][ngrid][ngrid];      // Green's function
@@ -256,12 +240,12 @@ void solvePoisson(double a, double ***rho, double ***phi, int ngrid) {
 
   // transform back into real space
   phi = fftw3(phi);
-
-
 }
+*/
 
 //Some helper functions for calculating the g for the x, y, and z directions 
 double getGx(int i, int j, int k, vector<double> &phi){
+  double gx;
   if (i == 0){
     gx = -0.5 * (phi[pow(ngrid, 2)* (ngrid - 1) + ngrid * j + k] - phi[pow(ngrid, 2) * (i + 1) + ngrid * j + k]);// i = ngrid - 1
   }
@@ -273,9 +257,11 @@ double getGx(int i, int j, int k, vector<double> &phi){
       gx = -0.5 * (phi[pow(ngrid, 2) * (i - 1) + ngrid * j + k] - phi[pow(ngrid, 2) * (i + 1) + ngrid * j + k]); // The normal state
     }
   }
+  return gx;
 }
 
 double getGy(int i, int j, int k, vector<double> &phi){
+  double gy;
   if (j == 0){
     gy = -0.5 *(phi[pow(ngrid, 2)* i + ngrid * (ngrid - 1) + k] - phi[pow(ngrid, 2) * i + ngrid * (j+1) + k]);// j = ngrid - 1
   }
@@ -287,9 +273,11 @@ double getGy(int i, int j, int k, vector<double> &phi){
       gy = -0.5 * (phi[pow(ngrid, 2) * i + ngrid * (j - 1) + k] - phi[pow(ngrid, 2) * i + ngrid * (j + 1) + k]); // normal
     }
   }
+  return gy;
 }
 
 double getGz(int i, int j, int k, vector<double> &phi){
+  double gz;
   if (k == 0){
     gz = -0.5 * (phi[pow(ngrid, 2) * i + ngrid * j + (ngrid - 1)] - phi[pow(ngrid, 2) * + ngrid * j + (k + 1)]); // k = ngrid - 1
   }
@@ -301,6 +289,7 @@ double getGz(int i, int j, int k, vector<double> &phi){
       gz = -0.5 * (phi[pow(ngrid, 2) * i + ngrid * j + (k - 1)] - phi[pow(ngrid, 2) * i + ngrid * j + (k + 1)] ); //normal
     }
   }
+  return gz;
 }
 
 
@@ -326,9 +315,9 @@ void updateParticles(int ngrid, int npart, double a, double da, double *x, doubl
     double gz = 0;
 
     /* 2. calculate particle accelerations from phi */
-    gx = getGx(i, j, k, phi) * tx * ty * tz + getGx(i+1, j, k, phi) * dx * ty * tz + getGx(i, j+1, k, phi) * tx * dy * tz + getGx(i + 1, j+1, k. phi) * dx * dy * tz + getGx(i, j, k+1, phi)* tx * ty * dz + getGx(i+1, j, k+1, phi) * dx * ty * dz + getGx(i, j+1, k+1, phi) * tx * dy * dz + getGx(i + 1, j+1, k+1, phi) * dx * dy * dz;
-    gy = getGy(i, j, k, phi) * tx * ty * tz + getGy(i+1, j, k, phi) * dx * ty * tz + getGy(i, j+1, k, phi) * tx * dy * tz + getGy(i + 1, j+1, k. phi) * dx * dy * tz + getGy(i, j, k+1, phi)* tx * ty * dz + getGy(i+1, j, k+1, phi) * dx * ty * dz + getGy(i, j+1, k+1, phi) * tx * dy * dz + getGy(i + 1, j+1, k+1, phi) * dx * dy * dz;
-    gz = getGz(i, j, k, phi) * tx * ty * tz + getGz(i+1, j, k, phi) * dx * ty * tz + getGz(i, j+1, k, phi) * tx * dy * tz + getGz(i + 1, j+1, k. phi) * dx * dy * tz + getGz(i, j, k+1, phi)* tx * ty * dz + getGz(i+1, j, k+1, phi) * dx * ty * dz + getGz(i, j+1, k+1, phi) * tx * dy * dz + getGz(i + 1, j+1, k+1, phi) * dx * dy * dz;
+    gx = getGx(i, j, k, phi) * tx * ty * tz + getGx(i+1, j, k, phi) * dx * ty * tz + getGx(i, j+1, k, phi) * tx * dy * tz + getGx(i + 1, j+1, k, phi) * dx * dy * tz + getGx(i, j, k+1, phi)* tx * ty * dz + getGx(i+1, j, k+1, phi) * dx * ty * dz + getGx(i, j+1, k+1, phi) * tx * dy * dz + getGx(i + 1, j+1, k+1, phi) * dx * dy * dz;
+    gy = getGy(i, j, k, phi) * tx * ty * tz + getGy(i+1, j, k, phi) * dx * ty * tz + getGy(i, j+1, k, phi) * tx * dy * tz + getGy(i + 1, j+1, k, phi) * dx * dy * tz + getGy(i, j, k+1, phi)* tx * ty * dz + getGy(i+1, j, k+1, phi) * dx * ty * dz + getGy(i, j+1, k+1, phi) * tx * dy * dz + getGy(i + 1, j+1, k+1, phi) * dx * dy * dz;
+    gz = getGz(i, j, k, phi) * tx * ty * tz + getGz(i+1, j, k, phi) * dx * ty * tz + getGz(i, j+1, k, phi) * tx * dy * tz + getGz(i + 1, j+1, k, phi) * dx * dy * tz + getGz(i, j, k+1, phi)* tx * ty * dz + getGz(i+1, j, k+1, phi) * dx * ty * dz + getGz(i, j+1, k+1, phi) * tx * dy * dz + getGz(i + 1, j+1, k+1, phi) * dx * dy * dz;
 
     /* 3. update particle velocities */
     *vx = *(vx) + f(a) * gx * da;
@@ -346,8 +335,6 @@ void updateParticles(int ngrid, int npart, double a, double da, double *x, doubl
     vx++;
     vy++;
     vz++;
-
-    a = a + da; //Updates a accordingly
   }
 }
 
