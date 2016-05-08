@@ -103,9 +103,11 @@ int main(int argc, char* argv[])
   //Creating local variables to be used throughout the code
 
   // time-stepping variables
-  double a = 0.01;    // start when universe was 1% current size
-  double aMAX = 0.1;  // End when universe is 100% current size
-  double da = 0.01;   // Advance by 1% per time-step 
+  double a = 0.01;
+  //double a = 0.01;    // start when universe was 1% current size
+  //double aMAX = 0.1;  // End when universe is 100% current size
+  double aMAX = .014;
+  double da = 0.001;   // Advance by 1% per time-step 
 
   //Giving me errors about "variable array length" even though npart is declared as constant.
   // Particle variables
@@ -139,6 +141,9 @@ int main(int argc, char* argv[])
   fftw_complex *fphi;
 
   // complex arrays have dimension n*n*(n/2 + 1)
+  //logically, they still have n * n * n
+  //frho= (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*ngrid*ngrid*ngrid);
+  //fphi= (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*ngrid*ngrid*ngrid);
   frho= (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*ngrid*ngrid*(0.5*ngrid+1));
   fphi= (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*ngrid*ngrid*(0.5*ngrid+1));
 
@@ -176,6 +181,7 @@ int main(int argc, char* argv[])
   while ( a < aMAX ){ 
     cout << a << endl;
     cicInterpolate(x, y, z, myRho);
+    printVec3D(ngrid, myRho);
     
     solvePoisson(a, myRho, frho, fphi, myPhi);
     
@@ -197,10 +203,10 @@ int main(int argc, char* argv[])
   
     
   outFile.close();
-  fftw_free(frho);
-  fftw_free(fphi);
-  fftw_free(myRho);
-  fftw_free(myPhi);
+  //fftw_free(frho);
+  //fftw_free(fphi);
+  //fftw_free(myRho);
+  //fftw_free(myPhi);
   
   return 0;
 }
@@ -250,9 +256,12 @@ void cicInterpolate(double *x, double *y, double *z, double *rho)
   // solve for delta = rho - rhoCrit / rhoCrit
   //********* This part is unclear *************//
 
-  for (int i=0; i<ngrid*ngrid*ngrid; i++){
-    rho[i] = ( rho[i] - rhoCrit ) / rhoCrit;
-  }
+  //for (int i=0; i<ngrid*ngrid*ngrid; i++){
+  //  rho[i] = ( rho[i] - rhoCrit ) / rhoCrit;
+  //}
+
+  //cout << "This is rho" << endl;
+  //printVec3D(ngrid, rho);
 
 
 }
@@ -268,30 +277,11 @@ void solvePoisson(double a, double *myRho, fftw_complex *frho,fftw_complex *fphi
    */
   /* declarations of relevant variables */
   double kx,ky,kz; // frequencies
-  double *G = new double[ngrid * ngrid * (int) floor((0.5 * ngrid + 1))]; //Green's Function
+  double *G = new double[ngrid * ngrid * ngrid]; //(int) floor((0.5 * ngrid )) + 1]; //Green's Function
   fftw_plan p_rho;
   fftw_plan p_phi;
 
-  /* Lets do something stupid... the fftw3 library is meant for C, not C++ which
-   * means that it doesn't want to be given vecotrs...
-   * So I have to copy over the data from the vectors
-   * into new arrays (and later copy them back)
-   */
-
-  //This is commented out because we no longer need to use vectors, and always use 1D double arrays
-  // double *myRho;
-  // double *myPhi;
-
-  // // real data has dimensions n*n*n
-  // myRho = (double*) fftw_malloc(sizeof(double)*ngrid*ngrid*ngrid);
-  // myPhi = (double*) fftw_malloc(sizeof(double)*ngrid*ngrid*ngrid);
-  // since we malloc'ed we have to free the memory ourselves later
-
-  // for (int i=0; i<ngrid*ngrid*ngrid; i++){
-  //   myRho[i] = rho[i];
-  //   myPhi[i] = phi[i];
-  // }
-
+  //printVec3D(ngrid, myRho);
 
   // says to go from rho to frho
   p_rho = fftw_plan_dft_r2c_3d(ngrid,ngrid,ngrid, myRho, frho, FFTW_ESTIMATE);
@@ -303,13 +293,17 @@ void solvePoisson(double a, double *myRho, fftw_complex *frho,fftw_complex *fphi
   /* calculate green's function in fourier space */
   for (int l=0; l<ngrid; l++){
     for (int m=0; m<ngrid; m++){
-      for (int n=0; n<(0.5*ngrid+1); n++){
+      for (int n = 0; n < ngrid; n++){
+      //for (int n=0; n<(0.5*ngrid+1); n++){
 	if ( (l==0) && (m==0) && (n==0) ) {G[0] = 0;}
 	else {
 	  kx = pi*(l-0.5*ngrid) / L;
 	  ky = pi*(m-0.5*ngrid) / L;
 	  kz = pi*n / L;
-	  G[l+m+n] = -((3.0*OmegaM)/(8.0*a)) * pow( (pow(sin(kx),2) + pow(sin(ky),2) + pow(sin(kz),2)), -1);
+	  //CHUNNY EDITS
+	  //G[l + m + n] = - ((3.0 * OmegaM)/8.0 * a) * pow( (pow(sin(kx), 2) + pow(sin(ky), 2) + pow(sin(kz), 2)), -1);
+	  G[l* ngrid * ngrid  + m * ngrid + n] = - ((3.0 * OmegaM)/8.0 * a) * pow( (pow(sin(kx), 2) + pow(sin(ky), 2) + pow(sin(kz), 2)), -1);
+	  //G[l* ngrid * (int)(0.5 * ngrid + 1) +m * (int)(0.5 * ngrid + 1) +n] = -((3.0*OmegaM)/(8.0*a)) * pow( (pow(sin(kx),2) + pow(sin(ky),2) + pow(sin(kz),2)), -1);
 	}
       }
     }
@@ -318,29 +312,36 @@ void solvePoisson(double a, double *myRho, fftw_complex *frho,fftw_complex *fphi
   /* calculate fphi in fourier space */
   for (int l=0; l<ngrid; l++){
     for (int m=0; m<ngrid; m++){
-      for (int n=0; n<0.5*ngrid+1; n++){
-	fphi[l+m+n][0] = G[l+m+n]*frho[l+m+n][0];
-	fphi[l+m+n][1] = G[l+m+n]*frho[l+m+n][1];
+      for (int n=0; n<ngrid; n++){
+	//for (int n=0; n<0.5*ngrid+1; n++){
+	//fphi[l + m + n][0] = G[l + m + n] * frho[l + m + n][0];
+	//fphi[l + m + n][1] = G[l + m + n] * frho[l + m + n][1];
+	fphi[l * ngrid * ngrid + m * ngrid + n][0] = G[l * ngrid * ngrid + m * ngrid + n] * frho[l * ngrid * ngrid + m * ngrid + n][0];
+	fphi[l * ngrid * ngrid + m * ngrid + n][1] = G[l * ngrid * ngrid + m * ngrid + n] * frho[l * ngrid * ngrid + m * ngrid + n][1];
+
+	//fphi[l* ngrid * (int)(0.5 * ngrid + 1) +m * (int)(0.5 * ngrid + 1) +n][0] = G[l* ngrid * (int)(0.5 * ngrid + 1) +m * (int)(0.5 * ngrid + 1) +n]*frho[l* ngrid * (int)(0.5 * ngrid + 1) +m * (int)(0.5 * ngrid + 1) +n][0];
+	//fphi[l* ngrid * (int)(0.5 * ngrid + 1) +m * (int)(0.5 * ngrid + 1) +n][1] = G[l* ngrid * (int)(0.5 * ngrid + 1) +m * (int)(0.5 * ngrid + 1) +n]*frho[l* ngrid * (int)(0.5 * ngrid + 1) +m * (int)(0.5 * ngrid + 1) +n][1];
       }
     }
   }
+ 
 
 
   /* reverse transformation */
-
   p_phi = fftw_plan_dft_c2r_3d(ngrid,ngrid,ngrid, fphi, myPhi, FFTW_ESTIMATE);
 
   fftw_execute(p_phi);
   fftw_destroy_plan(p_phi);
-
-  /* nomralize phi and copy back into vector*/
+  /* normalize phi and copy back into vector*/
   for (int i=0; i<ngrid; i++){
     for (int j=0; j<ngrid; j++){
       for (int k=0; k<ngrid; k++){
-	myPhi[i+j+k]= (1.0/pow(L,3))*myPhi[i+j+k];
+	myPhi[i * ngrid * ngrid + j * ngrid + k ] = (1.0 / pow(L, 3)) * myPhi[i * ngrid * ngrid + j * ngrid + k];
+	//myPhi[i+j+k]= (1.0/pow(L,3))*myPhi[i+j+k];
       }
     }
   }
+   
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////

@@ -24,7 +24,7 @@ char version[] = "v.79";
 
 
 // relevant variables
-const int ngrid = pow(10,1); //TEMPORARY, FOR TESTING PURPOSES ONLY
+const int ngrid = pow(4,1); //TEMPORARY, FOR TESTING PURPOSES ONLY
 const int npart = pow(3,1);
 
 // cosmological variables
