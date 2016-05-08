@@ -121,9 +121,13 @@ int main(int argc, char* argv[])
 
 
 
+  double *myRho;
+  double *myPhi;
 
+  // real data has dimensions n*n*n
+  myRho = (double*) fftw_malloc(sizeof(double)*ngrid*ngrid*ngrid);
 
-  vector<double> rho;    // Should describe mass density for each cell
+  //vector<double> rho;    // Should describe mass density for each cell
   vector<double> phi;     // Should have unique density for each cell 
 
   fftw_complex *frho;
@@ -140,7 +144,7 @@ int main(int argc, char* argv[])
 
 
   // setup initial conditions
-  for (int i=0; i<ngrid; i++){
+  for (int i=0; i<npart; i++){
     // start with uniform distribution
     x[i]=drand48()*L;
     y[i]=drand48()*L;
@@ -155,9 +159,9 @@ int main(int argc, char* argv[])
      *
      *  D+ = 1 (although perhaps D+ = a)
      */
-    x[i] = x[i] + sin( 2*pi*x[i] / L);
-    y[i] = y[i] + sin( 2*pi*y[i] / L);
-    z[i] = z[i] + sin( 2*pi*z[i] / L);
+    x[i] = x[i] + 10*sin( 2*pi*x[i] / L);
+    y[i] = y[i] + 10*sin( 2*pi*y[i] / L);
+    z[i] = z[i] + 10*sin( 2*pi*z[i] / L);
 
     vx[i]=0;  // initial velocities are all zero
     vy[i]=0;  
@@ -173,37 +177,38 @@ int main(int argc, char* argv[])
                 << vx[i] << " "
                 << vy[i] << " "
                 << vz[i];
-      } 
+      }
 
 
   
   // // loop over time-steps
   // while ( a < aMAX )
   //   { 
-  //     cicInterpolate(x, y, z, rho);
+      cicInterpolate(x, y, z, myRho);
       
-  //     solvePoisson(a, rho, frho, fphi, phi);
+      // solvePoisson(a, rho, frho, fphi, phi);
       
-  //     outFile << "\nAt a = " << a;
-  //     for (int i=0; i<npart; i++) {
-  //       outFile << '\n'
-  //               << x[i]  << " "
-  //               << y[i]  << " "
-  //               << z[i]  << " "
-  //               << vx[i] << " "
-  //               << vy[i] << " "
-  //               << vz[i];
-  //     }
+      // outFile << "\nAt a = " << a;
+      // for (int i=0; i<npart; i++) {
+      //   outFile << '\n'
+      //           << x[i]  << " "
+      //           << y[i]  << " "
+      //           << z[i]  << " "
+      //           << vx[i] << " "
+      //           << vy[i] << " "
+      //           << vz[i];
+      // }
       
-  //     updateParticles(a, da,&x[0], &y[0], &z[0], &vx[0], &vy[0], &vz[0], phi);
+      // updateParticles(a, da,&x[0], &y[0], &z[0], &vx[0], &vy[0], &vz[0], phi);
       
-  //     a += da;
-  //   }
+      // a += da;
+    // }
 
 
   outFile.close();
   fftw_free(frho);
   fftw_free(fphi);
+  fftw_free(myRho);
 
     return 0;
 }
@@ -215,52 +220,85 @@ int main(int argc, char* argv[])
  * Each particle contributes to the cell it is in and the neighboring grid cells based on the
  * algorithm in Section 2.8 of the write-up.
  */ 
-void cicInterpolate(double *x, double *y, double *z, vector<double>& rho) {
-    //declare parent cell locations
-    int pcx, pcy, pcz;
+// void cicInterpolate(double *x, double *y, double *z, vector<double>& rho) {
+//     //declare parent cell locations
+//     int pcx, pcy, pcz;
     
-    //declare distances from particle to cell (note that t_x/y/z is not explicitly defined but only used as '1 - d_x/y/x')
-    double dx, dy, dz;
+//     //declare distances from particle to cell (note that t_x/y/z is not explicitly defined but only used as '1 - d_x/y/x')
+//     double dx, dy, dz;
     
-    //declare the factors that will be used for mass assignment (either d or t)
-    double xfactor, yfactor, zfactor;
+//     //declare the factors that will be used for mass assignment (either d or t)
+//     double xfactor, yfactor, zfactor;
     
-    //loop over particles
-    for (int counter=0; counter<npart; counter++) {
-        //get parent cell locations
-        pcx = floor(x[counter]);
-        pcy = floor(y[counter]);
-        pcz = floor(z[counter]);
+//     //loop over particles
+//     for (int counter=0; counter<npart; counter++) {
+//         //get parent cell locations
+//         pcx = floor(x[counter]);
+//         pcy = floor(y[counter]);
+//         pcz = floor(z[counter]);
         
-        dx = x[counter] - pcx;
-        dy = y[counter] - pcy;
-        dz = z[counter] - pcz;
+//         dx = x[counter] - pcx;
+//         dy = y[counter] - pcy;
+//         dz = z[counter] - pcz;
         
-        //loop over relevant cells
-        for (int i=pcx; i<pcx+2; i++) {
-            //get the d and t variable for x
-            //if on the first iteration of x set the xfactor to tx, on the second iteration to dx
-            if (i - pcx == 0) {xfactor = 1 - dx;}
-            else {xfactor = dx;}
-            for (int j=pcy; j<pcy+2; j++) {
-                //get the d and t variable for y
-                //if on the first iteration of y set the yfactor to ty, on the second iteration to dy
-                if (j - pcy == 0) {yfactor = 1 - dy;}
-                else {yfactor = dy;}
-                for (int k=pcz; k<pcz+2; k++) {
-                    //get the d and t variable for z
-                    //if on the first iteration of z set the zfactor to tz, on the second iteration to dz
-                    if (k - pcz == 0) {zfactor = 1 - dz;}
-                    else {zfactor = dz;}
+//         //loop over relevant cells
+//         for (int i=pcx; i<pcx+2; i++) {
+//             //get the d and t variable for x
+//             //if on the first iteration of x set the xfactor to tx, on the second iteration to dx
+//             if (i - pcx == 0) {xfactor = 1 - dx;}
+//             else {xfactor = dx;}
+//             for (int j=pcy; j<pcy+2; j++) {
+//                 //get the d and t variable for y
+//                 //if on the first iteration of y set the yfactor to ty, on the second iteration to dy
+//                 if (j - pcy == 0) {yfactor = 1 - dy;}
+//                 else {yfactor = dy;}
+//                 for (int k=pcz; k<pcz+2; k++) {
+//                     //get the d and t variable for z
+//                     //if on the first iteration of z set the zfactor to tz, on the second iteration to dz
+//                     if (k - pcz == 0) {zfactor = 1 - dz;}
+//                     else {zfactor = dz;}
                     
-                    //now increment the mass of the appropriate rho index (assuming mass = 1)
-                    rho[(i%ngrid)*ngrid*ngrid + (j%ngrid)*ngrid + (k%ngrid)] += xfactor*yfactor*zfactor;
-                }
-            }
-        }
-    }
-}
+//                     //now increment the mass of the appropriate rho index (assuming mass = 1)
+//                     rho[(i%ngrid)*ngrid*ngrid + (j%ngrid)*ngrid + (k%ngrid)] += xfactor*yfactor*zfactor;
+//                 }
+//             }
+//         }
+//     }
+// }
+void cicInterpolate(double *x, double *y, double *z, double *rho)
+{
+  /* declarations of relevant variables*/
 
+  int I, J, K;      // Parent cell coordinates
+
+  double dx,dy,dz;  // distances from parent cell center to particle
+
+  double tx,ty,tz;  // interpolation factors
+
+
+  /* loop over particles and apply the CIC interpolation to calculate density of each cell */
+  for (int particle=0; particle<npart; particle++)
+  {
+    I = floor(x[particle]);
+    J = floor(y[particle]);
+    K = floor(z[particle]);
+
+    dx = x[particle] - (double) I;    tx = 1 - dx;
+    dy = y[particle] - (double) J;    ty = 1 - dy;
+    dz = z[particle] - (double) K;    tz = 1 - dz;
+
+
+    rho[   (I %ngrid)   *ngrid*ngrid +   (J %ngrid)   *ngrid +   (K %ngrid)]   += tx*ty*tz;
+    rho[   (I %ngrid)   *ngrid*ngrid + ((J+1) %ngrid) *ngrid +   (K %ngrid)]   += tx*dy*tz;
+    rho[   (I %ngrid)   *ngrid*ngrid +   (J %ngrid)   *ngrid + ((K+1) %ngrid)] += tx*ty*dz;
+    rho[   (I %ngrid)   *ngrid*ngrid + ((J+1) %ngrid) *ngrid + ((K+1) %ngrid)] += tx*dy*dz;
+    rho[ ((I+1) %ngrid) *ngrid*ngrid +   (J %ngrid)   *ngrid +   (K %ngrid)]   += dx*ty*tz;
+    rho[ ((I+1) %ngrid) *ngrid*ngrid + ((J+1) %ngrid) *ngrid +   (K %ngrid)]   += dx*dy*tz;
+    rho[ ((I+1) %ngrid) *ngrid*ngrid +   (J %ngrid)   *ngrid + ((K+1) %ngrid)] += dx*ty*dz;
+    rho[ ((I+1) %ngrid) *ngrid*ngrid + ((J+1) %ngrid) *ngrid + ((K+1) %ngrid)] += dx*dy*dz;
+  }
+
+}
 
 
 /*  Solve poisson's equations and calculate acceleration field  */ 

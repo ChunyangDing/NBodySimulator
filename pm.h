@@ -6,7 +6,7 @@
  */
 ///////////////////////////////////////////////////////////////////////////////
 
-void cicInterpolate(double *x, double *y, double *z, std::vector<double>& rho);
+void cicInterpolate(double *x, double *y, double *z, double *rho);
 void solvePoisson(double a, std::vector<double> &rho, fftw_complex *frho,fftw_complex *fphi, std::vector<double> &phi);
 double getGx(int i, int j, int k, std::vector<double> &phi);
 double getGy(int i, int j, int k, std::vector<double> &phi);
@@ -20,7 +20,7 @@ char version[] = "v.79";
 
 // relevant variables
 const int ngrid = pow(64,1);
-const int npart = pow(32,1);
+const int npart = pow(1000,1);
 
 // cosmological variables
 const double OmegaM = 0.27;
