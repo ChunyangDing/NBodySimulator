@@ -32,7 +32,7 @@ const double OmegaM = 0.27;
 const double OmegaL = 0.73;
 const double OmegaK = 0.0000824;
 //const double G = 6.6740831 * pow(10, -11);
-//const double rhoCrit = 1.06 * pow(10, -29);
+const double rhoCrit = 1.06 * pow(10, -29);
 //const double H = 67.80;
 
 const double pi = 3.141592654;
