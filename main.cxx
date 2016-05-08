@@ -40,29 +40,35 @@
 
 using namespace std;
 
-int main(int argc, char* argv[]) {
-  int ch;
-  //update code version if any changes are made to the code
-  char version[] = "v.74";
+int main(int argc, char* argv[])
+{
+  int c;
+  char version[] = "v.79";
   
-  while ((ch = getopt(argc, argv,"Vh")) != -1) {
-        //note that there break statements are redundant for cases when the program is quitted
-    switch (ch) {
+  while ((c = getopt(argc, argv,"Vh")) != -1){
+    switch (c) {
       case 'V':
         cout << "Version of code: " << version << endl;
-        //quit the program if 'V' is passed.
-        return 0;
+        return 0; //quit the program if 'V' is passed.
       case 'h':
-        cout << "This program will simulate dark matter based on given input conditions and constants.  It will create a text file at the end with the coordinates and velocities of each particle at each time-step.  Please call the program in the following way:" << endl;
+        cout << "This program will simulate dark matter based on given input"
+                "conditions and constants.  It will create a text file at the"
+                "end with the coordinates and velocities of each particle at"
+                "each time-step.  Please call the program in the following way:"
+                 << endl;
         usage(argv[0]);
-        cout << "All the arguments in the program are optional.\n-V\tprints the program version and quits\n-h\tprints instructions for the program and quits.\n[fileName]\t is an optional argument to specify the name of the output file." << endl;
-        //quit the program if 'h' is passed.
-        return 0;
+        cout << "All the arguments in the program are optional.\n-V\tprints"
+                "the program version and quits\n-h\tprints instructions for"
+                "the program and quits.\n[fileName]\t is an optional argument"
+                "to specify the name of the output file."
+                << endl;
+        
+        return 0; //quit the program if 'h' is passed.
       case '?':
         //call usage function if unkown option
-        cout << "You have passed an unspecified option.  Run code as '" << argv[0] << " -h' for help." << endl;
+        cout << "You have passed an unspecified option.  Run code as '"
+             << argv[0] << " -h' for help." << endl;
 				usage(argv[0]);
-        //return 2 and quit to specify that the program has did not recieve proper options
         return 2;
       }
   }
@@ -84,6 +90,17 @@ int main(int argc, char* argv[]) {
   else {outFile.open("out.txt");}
 
 
+  /////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////
+
 
 
   // time-stepping variables
@@ -100,6 +117,11 @@ int main(int argc, char* argv[]) {
   double vy[npart];
   double vz[npart];
   
+
+
+
+
+
   vector<double> rho;    // Should describe mass density for each cell
   vector<double> phi;     // Should have unique density for each cell 
 
@@ -110,6 +132,12 @@ int main(int argc, char* argv[]) {
   frho= (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*ngrid*ngrid*(0.5*ngrid+1));
   fphi= (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*ngrid*ngrid*(0.5*ngrid+1));
     
+
+
+
+
+
+
   // setup initial conditions
   for (int i=0; i<ngrid; i++){
     // start with uniform distribution
@@ -150,7 +178,7 @@ int main(int argc, char* argv[]) {
       /* write out data*/
       outFile << "\nAt a = " << a;
       for (int i=0; i<npart; i++) {
-        outFile << "\n" << x[i] << " "  << y[i] << " "  << z[i] << " "  << vx[i] << " "  << vy[i] << " "  << vz[i];
+        outFile << '\n' << x[i] << " "  << y[i] << " "  << z[i] << " "  << vx[i] << " "  << vy[i] << " "  << vz[i];
       }
       
       /* updateParticles */ 
@@ -158,7 +186,7 @@ int main(int argc, char* argv[]) {
       
       a = a + da;
     }
-
+  outFile.close();
   fftw_free(frho);
   fftw_free(fphi);
 
