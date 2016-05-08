@@ -42,9 +42,7 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
-  int c;
-  char version[] = "v.79";
-  
+  int c; 
   while ((c = getopt(argc, argv,"Vh")) != -1){
     switch (c) {
       case 'V':
@@ -76,18 +74,21 @@ int main(int argc, char* argv[])
   //now check for the file name
   int optLeftOver = argc - optind;
   if (optLeftOver > 1) {
-    cout << "You have entered more than one standard arguments or did not put [file] at the end.  Run code as '" << argv[0] << " -h' for help." << endl;
-    //return 2 and quit to specify that the program has did not recieve proper argument
+    cout << "You entered more than one standard argument or did not put [file]"
+            " at the end.  Run code as '"
+         << argv[0]
+         << " -h' for help."
+         << endl;
     return 2;
   }
     
-  //declare the output file
   ofstream outFile;
   //if there is one opt left then that will be the name, else the file will be named by default
-  if (optLeftOver == 1) {
-    outFile.open(argv[optind]);
-  }
-  else {outFile.open("out.txt");}
+  if (optLeftOver == 1) outFile.open(argv[optind]);
+  else outFile.open("out.txt");
+
+  //Make a header for the outputfile
+  outFile << "ID\tx\ty\tz\tvx\tvy\tvz" << endl;
 
 
   /////////////////////////////////////////////////////////////////////////////
@@ -163,8 +164,8 @@ int main(int argc, char* argv[])
     vz[i]=0;  
   }
   
-  //Make a header for the outputfile
-  outFile << "ID\tx\ty\tz\tvx\tvy\tvz" << endl;
+
+
   
   // loop over time-steps
   while ( a < aMAX )
@@ -184,18 +185,23 @@ int main(int argc, char* argv[])
       /* updateParticles */ 
       updateParticles(a, da,&x[0], &y[0], &z[0], &vx[0], &vy[0], &vz[0], phi);
       
-      a = a + da;
+      a += da;
     }
+
+
   outFile.close();
   fftw_free(frho);
   fftw_free(fphi);
 
     return 0;
 }
+
+
+
 /*
- *Calculate contribution of each particle to the density grid points using the CIC interpolation.
- *Each particle contributes to the cell it is in and the neighboring grid cells based on the
- *algorithm in Section 2.8 of the write-up.
+ * Calculate contribution of each particle to the density grid points using the CIC interpolation.
+ * Each particle contributes to the cell it is in and the neighboring grid cells based on the
+ * algorithm in Section 2.8 of the write-up.
  */ 
 void cicInterpolate(double *x, double *y, double *z, vector<double>& rho) {
     //declare parent cell locations
