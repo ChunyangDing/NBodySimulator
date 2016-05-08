@@ -105,22 +105,22 @@ int main(int argc, char* argv[])
 
   // time-stepping variables
   double a = 0.01;    // start when universe was 1% current size
-  double aMAX = 0.03;  // End when universe is 100% current size
+  double aMAX = 0.1;  // End when universe is 100% current size
   double da = 0.01;   // Advance by 1% per time-step 
 
   //Giving me errors about "variable array length" even though npart is declared as constant.
   // Particle variables
-  double x[npart];
-  double y[npart];
-  double z[npart];
+  double* x = new double[npart];
+  double* y = new double[npart];
+  double* z = new double[npart];
 
-  double vx[npart];
-  double vy[npart];
-  double vz[npart];
+  double *vx = new double[npart];
+  double *vy = new double[npart];
+  double *vz = new double[npart];
   
-  double gx[ngrid*ngrid*ngrid];
-  double gy[ngrid*ngrid*ngrid];
-  double gz[ngrid*ngrid*ngrid];
+  double *gx = new double[ngrid * ngrid * ngrid];
+  double *gy = new double[ngrid * ngrid * ngrid];
+  double *gz = new double[ngrid * ngrid * ngrid];
 
   double Dplus; // factor in initial conditions
 
@@ -168,7 +168,7 @@ int main(int argc, char* argv[])
     vz[i]=0;  
   }
   
-
+  //
   //////////////////////////////////////////////////////////////////////////
   //Main loop of the code; calculates the updates each step along the way
   // loop over time-steps
@@ -191,7 +191,7 @@ int main(int argc, char* argv[])
     Field_on_Mesh(gx,gy,gx, myPhi); //solves for g on mesh
     updateParticles(a, da,x, y, z, vx, vy, vz, gx,gy,gz);
     a += da;
-    printVec3D(ngrid, myPhi);
+    //printVec3D(ngrid, myPhi);
   }
   
     
@@ -267,7 +267,7 @@ void solvePoisson(double a, double *myRho, fftw_complex *frho,fftw_complex *fphi
    */
   /* declarations of relevant variables */
   double kx,ky,kz; // frequencies
-  double G[ngrid*ngrid*(int)floor((0.5*ngrid +1))]; // Green's function
+  double *G = new double[ngrid * ngrid * (int) floor((0.5 * ngrid + 1))]; //Green's Function
   fftw_plan p_rho;
   fftw_plan p_phi;
 
