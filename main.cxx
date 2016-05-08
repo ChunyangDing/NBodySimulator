@@ -1,41 +1,14 @@
 #include <fftw3.h>
-#include <math.h> // for floor(), pow()
+#include <math.h> // floor(), pow()
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <stdlib.h> // for malloc, drand48()
-#include <unistd.h>
+#include <stdlib.h> // malloc, drand48()
+#include <unistd.h> // getopt()
+
+#include "pm.h"
 
 using namespace std;
-
-// function prototypes
-void cicInterpolate(int ngrid, int npart, double *x, double *y, double *z, vector<double>& rho);
-void solvePoisson(double a, vector<double> &rho, fftw_complex *frho,fftw_complex *fphi, vector<double> &phi);
-double getGx(int i, int j, int k, vector<double> &phi);
-double getGy(int i, int j, int k, vector<double> &phi);
-double getGz(int i, int j, int k, vector<double> &phi);
-void updateParticles(int ngrid, int npart, double a, double da, double *x, double *y, double *z, double *vx, double *vy, double *vz, vector<double> &phi);
-int f(double a);
-
-// relevant variables
-const int ngrid = pow(64,1);
-const int npart = pow(32,1);
-
-// cosmological variables
-const double OmegaM = 0.27;
-const double OmegaL = 0.73;
-const double OmegaK = 0.0000824;
-const double G = 6.6740831 * pow(10, -11);
-const double rhoCrit = 1.06 * pow(10, -29);
-const double H = 67.80;
-
-const double pi = 3.141592654;
-
-const double L = 100.0; // scales the size of the model
-
-void usage(const char* prog) {
-    cerr << "Usage: " << prog << " [-V] [-h] [fileName]" << endl;
-}
 
 int main(int argc, char* argv[]) {
   int ch;
@@ -80,12 +53,7 @@ int main(int argc, char* argv[]) {
   }
   else {outFile.open("out.txt");}
 
-  // variables for converting to actual units (we can ignore these for our purposes)
-  //const double r0 = 1;
-  //const double t0 = 1/H;
-  //const double v0 = r0 / t0;
-  //const double rho0 = ((3 * pow(H, 2)) / (8 * pi * G)) * OmegaM;
-  //const double phi0 = pow(v0, 2);
+
 
 
   // time-stepping variables
@@ -144,7 +112,7 @@ int main(int argc, char* argv[]) {
   while ( a < aMAX )
     { 
       /* Solve for density field */ 
-      cicInterpolate(ngrid, npart, x, y, z, rho);
+      cicInterpolate(x, y, z, rho);
       
       /* Solve for potential */ 
       solvePoisson(a, rho, frho, fphi, phi);
@@ -156,7 +124,7 @@ int main(int argc, char* argv[]) {
       }
       
       /* updateParticles */ 
-      updateParticles(ngrid, npart, a, da,&x[0], &y[0], &z[0], &vx[0], &vy[0], &vz[0], phi);
+      updateParticles(a, da,&x[0], &y[0], &z[0], &vx[0], &vy[0], &vz[0], phi);
       
       a = a + da;
     }
@@ -171,7 +139,7 @@ int main(int argc, char* argv[]) {
  *Each particle contributes to the cell it is in and the neighboring grid cells based on the
  *algorithm in Section 2.8 of the write-up.
  */ 
-void cicInterpolate(int ngrid, int npart, double *x, double *y, double *z, vector<double>& rho) {
+void cicInterpolate(double *x, double *y, double *z, vector<double>& rho) {
     //declare parent cell locations
     int pcx, pcy, pcz;
     
@@ -242,6 +210,7 @@ void solvePoisson(double a, vector<double> &rho, fftw_complex *frho,fftw_complex
   // real data has dimensions n*n*n
   myRho = (double*) fftw_malloc(sizeof(double)*ngrid*ngrid*ngrid);
   myPhi = (double*) fftw_malloc(sizeof(double)*ngrid*ngrid*ngrid);
+  // since we malloc'ed we have to free the memory ourselves later
 
   for (int i=0; i<ngrid*ngrid*ngrid; i++){
     myRho[i] = rho[i];
@@ -348,7 +317,7 @@ double getGz(int i, int j, int k, vector<double> &phi){
 
 
 /* Update position, velocities for each particle */ 
-void updateParticles(int ngrid, int npart, double a, double da, double *x, double *y, double *z, double *vx, double *vy, double *vz, vector<double> &phi)
+void updateParticles(double a, double da, double *x, double *y, double *z, double *vx, double *vy, double *vz, vector<double> &phi)
 {
   for (int abc = 0; abc < npart; abc++){
     /* 1. declarations of relevant variables */ 
@@ -392,7 +361,10 @@ void updateParticles(int ngrid, int npart, double a, double da, double *x, doubl
   }
 }
 
-int f(double a){
-  //Needs to be implemented as shown onbottom of p8
+double f(double a){
   return pow((1 / a) * sqrt( OmegaM + OmegaK * a + OmegaL * pow(a, 2) ), -0.5);
+}
+
+void usage(const char* prog) {
+    cerr << "Usage: " << prog << " [-V] [-h] [fileName]" << endl;
 }
