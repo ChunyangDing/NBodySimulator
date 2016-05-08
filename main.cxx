@@ -163,17 +163,7 @@ int main(int argc, char* argv[])
     vy[i]=0;  
     vz[i]=0;  
   }
-  
-
-
-  
-  // loop over time-steps
-  while ( a < aMAX )
-    { 
-      cicInterpolate(x, y, z, rho);
-      
-      solvePoisson(a, rho, frho, fphi, phi);
-      
+ 
       outFile << "\nAt a = " << a;
       for (int i=0; i<npart; i++) {
         outFile << '\n'
@@ -183,12 +173,32 @@ int main(int argc, char* argv[])
                 << vx[i] << " "
                 << vy[i] << " "
                 << vz[i];
-      }
+      } 
+
+
+  
+  // // loop over time-steps
+  // while ( a < aMAX )
+  //   { 
+  //     cicInterpolate(x, y, z, rho);
       
-      updateParticles(a, da,&x[0], &y[0], &z[0], &vx[0], &vy[0], &vz[0], phi);
+  //     solvePoisson(a, rho, frho, fphi, phi);
       
-      a += da;
-    }
+  //     outFile << "\nAt a = " << a;
+  //     for (int i=0; i<npart; i++) {
+  //       outFile << '\n'
+  //               << x[i]  << " "
+  //               << y[i]  << " "
+  //               << z[i]  << " "
+  //               << vx[i] << " "
+  //               << vy[i] << " "
+  //               << vz[i];
+  //     }
+      
+  //     updateParticles(a, da,&x[0], &y[0], &z[0], &vx[0], &vy[0], &vz[0], phi);
+      
+  //     a += da;
+  //   }
 
 
   outFile.close();
