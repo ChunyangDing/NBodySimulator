@@ -170,19 +170,21 @@ int main(int argc, char* argv[])
   // loop over time-steps
   while ( a < aMAX )
     { 
-      /* Solve for density field */ 
       cicInterpolate(x, y, z, rho);
       
-      /* Solve for potential */ 
       solvePoisson(a, rho, frho, fphi, phi);
       
-      /* write out data*/
       outFile << "\nAt a = " << a;
       for (int i=0; i<npart; i++) {
-        outFile << '\n' << x[i] << " "  << y[i] << " "  << z[i] << " "  << vx[i] << " "  << vy[i] << " "  << vz[i];
+        outFile << '\n'
+                << x[i]  << " "
+                << y[i]  << " "
+                << z[i]  << " "
+                << vx[i] << " "
+                << vy[i] << " "
+                << vz[i];
       }
       
-      /* updateParticles */ 
       updateParticles(a, da,&x[0], &y[0], &z[0], &vx[0], &vy[0], &vz[0], phi);
       
       a += da;
@@ -248,6 +250,8 @@ void cicInterpolate(double *x, double *y, double *z, vector<double>& rho) {
         }
     }
 }
+
+
 
 /*  Solve poisson's equations and calculate acceleration field  */ 
 void solvePoisson(double a, vector<double> &rho, fftw_complex *frho,fftw_complex *fphi, vector<double> &phi)
@@ -330,6 +334,8 @@ void solvePoisson(double a, vector<double> &rho, fftw_complex *frho,fftw_complex
 
 }
 
+
+
 //Some helper functions for calculating the g for the x, y, and z directions 
 double getGx(int i, int j, int k, vector<double> &phi){
   double gx;
@@ -347,6 +353,7 @@ double getGx(int i, int j, int k, vector<double> &phi){
   return gx;
 }
 
+
 double getGy(int i, int j, int k, vector<double> &phi){
   double gy;
   if (j == 0){
@@ -363,6 +370,8 @@ double getGy(int i, int j, int k, vector<double> &phi){
   return gy;
 }
 
+
+
 double getGz(int i, int j, int k, vector<double> &phi){
   double gz;
   if (k == 0){
@@ -378,6 +387,8 @@ double getGz(int i, int j, int k, vector<double> &phi){
   }
   return gz;
 }
+
+
 
 
 /* Update position, velocities for each particle */ 
@@ -424,6 +435,10 @@ void updateParticles(double a, double da, double *x, double *y, double *z, doubl
     vz++;
   }
 }
+
+
+
+
 
 double f(double a){
   return pow((1 / a) * sqrt( OmegaM + OmegaK * a + OmegaL * pow(a, 2) ), -0.5);
