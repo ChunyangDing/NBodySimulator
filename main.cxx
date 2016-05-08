@@ -1,3 +1,33 @@
+//////////////////////////////////////////////////////////////////////////////
+/**
+ *  main.cxx : Paricle Mesh N-body Code
+ *
+ *  Authors  : Chunyang, Joseph, Mehmet
+ *  Date     : May 9, 2016
+ *
+ *  Uses PM technique to simulate gravitational interaction of N bodies in a
+ *  collisionless system.
+ *  ****************************
+ *  Outline:
+ *
+ *    define location of particles according to Zel'dovich approximation
+ *
+ *    interpolate density at mesh points
+ *
+ *    determine gravitational potential at mesh points
+ *
+ *    interpolate gravitational potential at particle positions
+ *
+ *    calculate x,y,z forces on particle from potential
+ *
+ *    update particle momentum
+ *
+ *    update particle position
+ *
+ *
+ */
+///////////////////////////////////////////////////////////////////////////////
+
 #include <fftw3.h>
 #include <math.h> // floor(), pow()
 #include <iostream>

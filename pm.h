@@ -1,4 +1,10 @@
-#include <vector>
+//////////////////////////////////////////////////////////////////////////////
+/**     pm.h
+ *
+ *
+ *
+ */
+///////////////////////////////////////////////////////////////////////////////
 
 void cicInterpolate(double *x, double *y, double *z, std::vector<double>& rho);
 void solvePoisson(double a, std::vector<double> &rho, fftw_complex *frho,fftw_complex *fphi, std::vector<double> &phi);
