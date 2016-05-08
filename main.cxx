@@ -38,7 +38,6 @@
 #include <math.h> // floor(), pow()
 #include <iostream>
 #include <fstream>
-#include <vector>
 #include <stdlib.h> // malloc, drand48()
 #include <unistd.h> // getopt()
 #include <cmath> //fmod()
@@ -97,7 +96,7 @@ int main(int argc, char* argv[])
   else outFile.open("out.txt");
 
   //Make a header for the outputfile
-  //outFile << "ID\tx\ty\tz\tvx\tvy\tvz" << endl;
+  outFile << "ID\tx\ty\tz\tvx\tvy\tvz" << endl;
 
 
   /////////////////////////////////////////////////////////////////////////////
@@ -130,6 +129,8 @@ int main(int argc, char* argv[])
   // real data has dimensions n*n*n
   myRho = (double*) fftw_malloc(sizeof(double)*ngrid*ngrid*ngrid);
   myPhi = (double*) fftw_malloc(sizeof(double)*ngrid*ngrid*ngrid);
+
+  //DEPRECATED, FOR DELETION
   //printVec3D(ngrid, myPhi);
   //vector<double> rho;    // Should describe mass density for each cell
   //vector<double> phi;     // Should have unique density for each cell 
@@ -181,11 +182,11 @@ int main(int argc, char* argv[])
     outFile << '\n' << endl;
     for (int i=0; i<npart; i++) {
       outFile << '\n'
-	      << x[i]  << " "
-	      << y[i]  << " "
-	      << z[i]  << " "
-	      << vx[i] << " "
-	      << vy[i] << " "
+	      << x[i]  << "  \t"
+	      << y[i]  << "  \t"
+	      << z[i]  << "  \t"
+	      << vx[i] << "  \t"
+	      << vy[i] << "  \t"
 	      << vz[i];
       }
     Field_on_Mesh(gx,gy,gx, myPhi); //solves for g on mesh
@@ -277,7 +278,7 @@ void solvePoisson(double a, double *myRho, fftw_complex *frho,fftw_complex *fphi
    * into new arrays (and later copy them back)
    */
 
-  //UNSURE WHY THIS IS COMMENTED OUT RIGHT NOW
+  //This is commented out because we no longer need to use vectors, and always use 1D double arrays
   // double *myRho;
   // double *myPhi;
 
