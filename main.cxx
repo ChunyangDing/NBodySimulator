@@ -27,6 +27,11 @@
  *
  */
 ///////////////////////////////////////////////////////////////////////////////
+//
+//Current main error: The phi is off the walls insane. Huge numbers, and the first two rows are nonsense.
+//Appears to be something wrong with the transform. Needs help with the Poisson portion. 
+//
+
 
 #include <fftw3.h>
 #include <math.h> // floor(), pow()
@@ -35,6 +40,7 @@
 #include <vector>
 #include <stdlib.h> // malloc, drand48()
 #include <unistd.h> // getopt()
+#include <cmath> //fmod()
 
 #include "pm.h"
 
@@ -42,6 +48,8 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
+  /////////////////////////////////////////////////////////////////////////////
+  //File input and argument handling region
   int c; 
   while ((c = getopt(argc, argv,"Vh")) != -1){
     switch (c) {
@@ -92,23 +100,14 @@ int main(int argc, char* argv[])
 
 
   /////////////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////
-
-
+  //Creating local variables to be used throughout the code
 
   // time-stepping variables
   double a = 0.01;    // start when universe was 1% current size
-  double aMAX = 1.0;  // End when universe is 100% current size
+  double aMAX = 0.03;  // End when universe is 100% current size
   double da = 0.01;   // Advance by 1% per time-step 
 
+  //Giving me errors about "variable array length" even though npart is declared as constant.
   // Particle variables
   double x[npart];
   double y[npart];
@@ -129,9 +128,7 @@ int main(int argc, char* argv[])
   // real data has dimensions n*n*n
   myRho = (double*) fftw_malloc(sizeof(double)*ngrid*ngrid*ngrid);
   myPhi = (double*) fftw_malloc(sizeof(double)*ngrid*ngrid*ngrid);
-  printVec3D(ngrid, myPhi);
-  //vector<double> rho;    // Should describe mass density for each cell
-  //vector<double> phi;     // Should have unique density for each cell 
+  //printVec3D(ngrid, myPhi);
 
   fftw_complex *frho;
   fftw_complex *fphi;
@@ -139,19 +136,13 @@ int main(int argc, char* argv[])
   // complex arrays have dimension n*n*(n/2 + 1)
   frho= (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*ngrid*ngrid*(0.5*ngrid+1));
   fphi= (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*ngrid*ngrid*(0.5*ngrid+1));
-    
-
-
-
-
-
 
   // setup initial conditions
   for (int i=0; i<npart; i++){
     // start with uniform distribution
-    x[i]=drand48()*L;
-    y[i]=drand48()*L;
-    z[i]=drand48()*L; 
+    x[i]=drand48()*ngrid; //EDITED BY CHUNNY: should not go to L, but to ngrid. Bounds are 0 - 63, not 0 - 99
+    y[i]=drand48()*ngrid;
+    z[i]=drand48()*ngrid; 
 
     /* displace according to Zel'dovich
      *
@@ -162,7 +153,7 @@ int main(int argc, char* argv[])
      *
      *  D+ = 1 (although perhaps D+ = a)
      */
-    x[i] = x[i] + 10*sin( 2*pi*x[i] / L);
+    x[i] = x[i] + 10*sin( 2*pi*x[i] / L); //This should be L based on what is written.
     y[i] = y[i] + 10*sin( 2*pi*y[i] / L);
     z[i] = z[i] + 10*sin( 2*pi*z[i] / L);
 
@@ -170,56 +161,56 @@ int main(int argc, char* argv[])
     vy[i]=0;  
     vz[i]=0;  
   }
- 
-      // outFile << "\nAt a = " << a;
-      // for (int i=0; i<npart; i++) {
-      //   outFile << '\n'
-      //           << x[i]  << " "
-      //           << y[i]  << " "
-      //           << z[i]  << " "
-      //           << vx[i] << " "
-      //           << vy[i] << " "
-      //           << vz[i];
-      // }
+
+  //DEPRECATED initial out file info
+  // outFile << "\nAt a = " << a;
+  // for (int i=0; i<npart; i++) {
+  //   outFile << '\n'
+  //           << x[i]  << " "
+  //           << y[i]  << " "
+  //           << z[i]  << " "
+  //           << vx[i] << " "
+  //           << vy[i] << " "
+  //           << vz[i];
+  // }
 
 
-  
-  // // loop over time-steps
-  // while ( a < aMAX )
-  //   { 
-  int counter=0;
-      while (counter < 1){
-      cicInterpolate(x, y, z, myRho);
-      
-      solvePoisson(a, myRho, frho, fphi, myPhi);
-      
-      outFile << '\n' << a;
-      for (int i=0; i<npart; i++) {
-        outFile << '\n'
-                << x[i]  << " "
-                << y[i]  << " "
-                << z[i]  << " "
-                << vx[i] << " "
-                << vy[i] << " "
-                << vz[i];
+  //////////////////////////////////////////////////////////////////////////
+  //Main loop of the code; calculates the updates each step along the way
+  // loop over time-steps
+  while ( a < aMAX ){ 
+    cout << a << endl;
+    cicInterpolate(x, y, z, myRho);
+    
+    solvePoisson(a, myRho, frho, fphi, myPhi);
+    
+    outFile << '\n' << endl;
+    for (int i=0; i<npart; i++) {
+      outFile << '\n'
+	      << x[i]  << " "
+	      << y[i]  << " "
+	      << z[i]  << " "
+	      << vx[i] << " "
+	      << vy[i] << " "
+	      << vz[i];
       }
-      Field_on_Mesh(gx,gy,gx, myPhi);
-      // updateParticles(a, da,x, y, z, vx, vy, vz, gx,gy,gz);
-       a += da;
-       counter++;
-    }
-
-
+    Field_on_Mesh(gx,gy,gx, myPhi);
+    updateParticles(a, da,x, y, z, vx, vy, vz, gx,gy,gz);
+    a += da;
+    printVec3D(ngrid, myPhi);
+  }
+  
+    
   outFile.close();
   fftw_free(frho);
   fftw_free(fphi);
   fftw_free(myRho);
   fftw_free(myPhi);
-
-    return 0;
+  
+  return 0;
 }
-
-
+  
+  
 
 /*
  * Calculate contribution of each particle to the density grid points using the CIC interpolation.
@@ -282,6 +273,8 @@ void solvePoisson(double a, double *myRho, fftw_complex *frho,fftw_complex *fphi
    * So I have to copy over the data from the vectors
    * into new arrays (and later copy them back)
    */
+
+  //UNSURE WHY THIS IS COMMENTED OUT RIGHT NOW
   // double *myRho;
   // double *myPhi;
 
@@ -305,24 +298,28 @@ void solvePoisson(double a, double *myRho, fftw_complex *frho,fftw_complex *fphi
 
   /* calculate green's function in fourier space */
   for (int l=0; l<ngrid; l++){
-  for (int m=0; m<ngrid; m++){
-  for (int n=0; n<(0.5*ngrid+1); n++){
-    if ( (l==0) && (m==0) && (n==0) ) {G[0] = 0;}
-    else {
-      kx = pi*(l-0.5*ngrid) / L;
-      ky = pi*(m-0.5*ngrid) / L;
-      kz = pi*n / L;
-  G[l+m+n] = -((3.0*OmegaM)/(8.0*a)) * pow( (pow(sin(kx),2) + pow(sin(ky),2) + pow(sin(kz),2)), -1);
+    for (int m=0; m<ngrid; m++){
+      for (int n=0; n<(0.5*ngrid+1); n++){
+	if ( (l==0) && (m==0) && (n==0) ) {G[0] = 0;}
+	else {
+	  kx = pi*(l-0.5*ngrid) / L;
+	  ky = pi*(m-0.5*ngrid) / L;
+	  kz = pi*n / L;
+	  G[l+m+n] = -((3.0*OmegaM)/(8.0*a)) * pow( (pow(sin(kx),2) + pow(sin(ky),2) + pow(sin(kz),2)), -1);
+	}
+      }
     }
-  }}}
+  }
 
   /* calculate fphi in fourier space */
   for (int l=0; l<ngrid; l++){
-  for (int m=0; m<ngrid; m++){
-  for (int n=0; n<0.5*ngrid+1; n++){
-    fphi[l+m+n][0] = G[l+m+n]*frho[l+m+n][0];
-    fphi[l+m+n][1] = G[l+m+n]*frho[l+m+n][1];
-  }}}
+    for (int m=0; m<ngrid; m++){
+      for (int n=0; n<0.5*ngrid+1; n++){
+	fphi[l+m+n][0] = G[l+m+n]*frho[l+m+n][0];
+	fphi[l+m+n][1] = G[l+m+n]*frho[l+m+n][1];
+      }
+    }
+  }
 
 
   /* reverse transformation */
@@ -334,15 +331,14 @@ void solvePoisson(double a, double *myRho, fftw_complex *frho,fftw_complex *fphi
 
   /* nomralize phi and copy back into vector*/
   for (int i=0; i<ngrid; i++){
-  for (int j=0; j<ngrid; j++){
-  for (int k=0; k<ngrid; k++){
-    myPhi[i+j+k]= (1.0/pow(L,3))*myPhi[i+j+k];
-  }}}
-
-  
-
-
+    for (int j=0; j<ngrid; j++){
+      for (int k=0; k<ngrid; k++){
+	myPhi[i+j+k]= (1.0/pow(L,3))*myPhi[i+j+k];
+      }
+    }
+  }
 }
+
 //////////////////////////////////////////////////////////////////////////////////////////
 
 void Field_on_Mesh(double *gx, double *gy, double *gz, double *phi)
@@ -350,29 +346,27 @@ void Field_on_Mesh(double *gx, double *gy, double *gz, double *phi)
   int ip1,im1,jp1,jm1,kp1,km1;
 
   for (int i=0; i<ngrid; i++){
-  for (int j=0; j<ngrid; j++){
-  for (int k=0; k<ngrid; k++){
-    ip1 = i+1;  im1 = i-1;
-    jp1 = j+1;  jm1 = j-1;
-    kp1 = k+1;  km1 = k-1;
+    for (int j=0; j<ngrid; j++){
+      for (int k=0; k<ngrid; k++){
+	ip1 = i+1;  im1 = i-1;
+	jp1 = j+1;  jm1 = j-1;
+	kp1 = k+1;  km1 = k-1;
 
-    // Boundary setting
-    if (i == ngrid-1) ip1 = 0;
-    if (j == ngrid-1) jp1 = 0;
-    if (k == ngrid-1) kp1 = 0;
-    if (i == 0) im1 = ngrid-1;
-    if (j == 0) jm1 = ngrid-1;
-    if (k == 0) km1 = ngrid-1;
-
-    gx[i*ngrid*ngrid+j*ngrid+k]= -.5*(phi[ip1*ngrid*ngrid + j*ngrid + k] - phi[im1*ngrid*ngrid + j*ngrid + k]);
-    gy[i*ngrid*ngrid+j*ngrid+k]= -.5*(phi[i*ngrid*ngrid + jp1*ngrid + k] - phi[i*ngrid*ngrid + jm1*ngrid + k]);
-    gz[i*ngrid*ngrid+j*ngrid+k]= -.5*(phi[i*ngrid*ngrid + j*ngrid + kp1] - phi[i*ngrid*ngrid + j*ngrid + km1]); 
-
-  }}} 
-
-  // for (int thing=0; thing < ngrid*ngrid*ngrid; thing++){
-  //   cout << phi[thing] << endl;
-  // }
+	// Boundary setting
+	if (i == ngrid-1) ip1 = 0;
+	if (j == ngrid-1) jp1 = 0;
+	if (k == ngrid-1) kp1 = 0;
+	if (i == 0) im1 = ngrid-1;
+	if (j == 0) jm1 = ngrid-1;
+	if (k == 0) km1 = ngrid-1;
+	
+	gx[i*ngrid*ngrid+j*ngrid+k]= -.5*(phi[ip1*ngrid*ngrid + j*ngrid + k] - phi[im1*ngrid*ngrid + j*ngrid + k]);
+	gy[i*ngrid*ngrid+j*ngrid+k]= -.5*(phi[i*ngrid*ngrid + jp1*ngrid + k] - phi[i*ngrid*ngrid + jm1*ngrid + k]);
+	gz[i*ngrid*ngrid+j*ngrid+k]= -.5*(phi[i*ngrid*ngrid + j*ngrid + kp1] - phi[i*ngrid*ngrid + j*ngrid + km1]); 
+	
+      }
+    }
+  } 
 }
 
 
@@ -395,7 +389,6 @@ void updateParticles(double a, double da, double *x, double *y, double*z, double
     double ax;
     double ay;
     double az;
-
     // Boundary conditions
     int ip1, jp1, kp1;
     ip1 = i+1;
@@ -407,37 +400,39 @@ void updateParticles(double a, double da, double *x, double *y, double*z, double
     if (k == ngrid-1) kp1 = 0;
 
     int N = ngrid;
+    //cout << i << ", " << j << ", " << k << endl;
+    ax= gx[i*N*N +  j*N  + k ]*tx*ty*tz + gx[ip1*N*N +  j*N + k ]*dx*ty*tz + 
+      gx[i*N*N + jp1*N + k ]*tx*dy*tz + gx[ip1*N*N + jp1*N+ k ]*dx*dy*tz + 
+      gx[i*N*N +  j*N + kp1]*tx*ty*dz + gx[ip1*N*N +  j*N +kp1]*dx*ty*dz + 
+      gx[i*N*N + jp1*N +kp1]*tx*dy*dz + gx[ip1*N*N+ jp1*N + kp1]*dx*dy*dz;
+    
+    ay= gy[i*N*N +  j*N  + k ]*tx*ty*tz + gy[ip1*N*N +  j*N + k ]*dx*ty*tz + 
+      gy[i*N*N + jp1*N + k ]*tx*dy*tz + gy[ip1*N*N + jp1*N+ k ]*dx*dy*tz + 
+      gy[i*N*N +  j*N + kp1]*tx*ty*dz + gy[ip1*N*N +  j*N +kp1]*dx*ty*dz + 
+      gy[i*N*N + jp1*N +kp1]*tx*dy*dz + gy[ip1*N*N+ jp1*N + kp1]*dx*dy*dz;
 
-  ax= gx[i*N*N +  j*N  + k ]*tx*ty*tz + gx[ip1*N*N +  j*N + k ]*dx*ty*tz + 
-    gx[i*N*N + jp1*N + k ]*tx*dy*tz + gx[ip1*N*N + jp1*N+ k ]*dx*dy*tz + 
-    gx[i*N*N +  j*N + kp1]*tx*ty*dz + gx[ip1*N*N +  j*N +kp1]*dx*ty*dz + 
-    gx[i*N*N + jp1*N +kp1]*tx*dy*dz + gx[ip1*N*N+ jp1*N + kp1]*dx*dy*dz;
+    az= gz[i*N*N +  j*N  + k ]*tx*ty*tz + gz[ip1*N*N +  j*N + k ]*dx*ty*tz + 
+      gz[i*N*N + jp1*N + k ]*tx*dy*tz + gz[ip1*N*N + jp1*N+ k ]*dx*dy*tz + 
+      gz[i*N*N +  j*N + kp1]*tx*ty*dz + gz[ip1*N*N +  j*N +kp1]*dx*ty*dz + 
+      gz[i*N*N + jp1*N +kp1]*tx*dy*dz + gz[ip1*N*N+ jp1*N + kp1]*dx*dy*dz;
 
-  ay= gy[i*N*N +  j*N  + k ]*tx*ty*tz + gy[ip1*N*N +  j*N + k ]*dx*ty*tz + 
-    gy[i*N*N + jp1*N + k ]*tx*dy*tz + gy[ip1*N*N + jp1*N+ k ]*dx*dy*tz + 
-    gy[i*N*N +  j*N + kp1]*tx*ty*dz + gy[ip1*N*N +  j*N +kp1]*dx*ty*dz + 
-    gy[i*N*N + jp1*N +kp1]*tx*dy*dz + gy[ip1*N*N+ jp1*N + kp1]*dx*dy*dz;
+    /* update particle velocities */
+    vx[p] += f(a) * ax * da;
+    vy[p] += f(a) * ay * da;
+    vz[p] += f(a) * az * da;
+    /* 4. update particle positions */ 
+    x[p] += pow((a+da/2.0), -2) * f(a + da/2.0) * vx[p] * da;
+    y[p] += pow((a+da/2.0), -2) * f(a + da/2.0) * vy[p] * da;
+    z[p] += pow((a+da/2.0), -2) * f(a + da/2.0) * vz[p] * da;
 
-    // for (int thing=0; thing < N*N*N; thing++)
-    // {
-    //   if(gy[thing]!= 0){
-    //     cout << gy[thing] << endl;
-    //   }
-    // }
+    /* Handles wrap around particles, either to the left or to the right */
+    x[p] = fmod(x[p], ngrid);
+    y[p] = fmod(y[p], ngrid);
+    z[p] = fmod(z[p], ngrid);
 
-  // az= gz[i*N*N +  j*N  + k ]*tx*ty*tz + gz[ip1*N*N +  j*N + k ]*dx*ty*tz + 
-  //   gz[i*N*N + jp1*N + k ]*tx*dy*tz + gz[ip1*N*N + jp1*N+ k ]*dx*dy*tz + 
-  //   gz[i*N*N +  j*N + kp1]*tx*ty*dz + gz[ip1*N*N +  j*N +kp1]*dx*ty*dz + 
-  //   gz[i*N*N + jp1*N +kp1]*tx*dy*dz + gz[ip1*N*N+ jp1*N + kp1]*dx*dy*dz;
-
-    // /* update particle velocities */
-    // vx[p] += f(a) * ax * da;
-    // vy[p] += f(a) * ay * da;
-    // vz[p] += f(a) * az * da;
-    // /* 4. update particle positions */ 
-    // x[p] += pow((a+da/2.0), -2) * f(a + da/2.0) * vx[p] * da;
-    // y[p] += pow((a+da/2.0), -2) * f(a + da/2.0) * vy[p] * da;
-    // z[p] += pow((a+da/2.0), -2) * f(a + da/2.0) * vz[p] * da;
+    if (x[p] < 0) x[p] = ngrid + x[p];
+    if (y[p] < 0) y[p] = ngrid + y[p];
+    if (z[p] < 0) z[p] = ngrid + z[p];
 
   }
 }
