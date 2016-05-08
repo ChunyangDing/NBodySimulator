@@ -25,9 +25,6 @@
  *    update particle position
  *
  *
- *  SEG FAULT:
- *
- *      Comment out az and the segfault disappears
  *
  */
 ///////////////////////////////////////////////////////////////////////////////
@@ -134,12 +131,9 @@ int main(int argc, char* argv[])
   myRho = (double*) fftw_malloc(sizeof(double)*ngrid*ngrid*ngrid);
   myPhi = (double*) fftw_malloc(sizeof(double)*ngrid*ngrid*ngrid);
   //printVec3D(ngrid, myPhi);
-<<<<<<< HEAD
-=======
   //vector<double> rho;    // Should describe mass density for each cell
   //vector<double> phi;     // Should have unique density for each cell 
->>>>>>> cf857b9bef7d1282ea643206948732bf394f884d
-
+  
   fftw_complex *frho;
   fftw_complex *fphi;
 
@@ -163,78 +157,17 @@ int main(int argc, char* argv[])
      *
      *  D+ = 1 (although perhaps D+ = a)
      */
-<<<<<<< HEAD
-    x[i] = x[i] + 10*sin( 2*pi*x[i] / L); //This should be L based on what is written.
-    y[i] = y[i] + 10*sin( 2*pi*y[i] / L);
-    z[i] = z[i] + 10*sin( 2*pi*z[i] / L);
-=======
      Dplus = a;
 
     x[i] = x[i] + Dplus*sin( 2*pi*x[i] / L);
     y[i] = y[i] + Dplus*sin( 2*pi*y[i] / L);
     z[i] = z[i] + Dplus*sin( 2*pi*z[i] / L);
->>>>>>> cf857b9bef7d1282ea643206948732bf394f884d
 
     vx[i]=0;  // initial velocities are all zero
     vy[i]=0;  
     vz[i]=0;  
   }
-<<<<<<< HEAD
-
-  //DEPRECATED initial out file info
-  // outFile << "\nAt a = " << a;
-  // for (int i=0; i<npart; i++) {
-  //   outFile << '\n'
-  //           << x[i]  << " "
-  //           << y[i]  << " "
-  //           << z[i]  << " "
-  //           << vx[i] << " "
-  //           << vy[i] << " "
-  //           << vz[i];
-  // }
-=======
- 
-
-    // Save initial condition to file
-      // outFile << "\nAt a = " << a;
-      // for (int i=0; i<npart; i++) {
-      //   outFile << '\n'
-      //           << x[i]  << " "
-      //           << y[i]  << " "
-      //           << z[i]  << " "
-      //           << vx[i] << " "
-      //           << vy[i] << " "
-      //           << vz[i];
-      // }
-
-
   
-  // // loop over time-steps
-  // while ( a < aMAX )
-  //   { 
-  int counter=0;   // hand-made counter for debugging
-      while (counter < 2){
-      cicInterpolate(x, y, z, myRho);
-      
-      solvePoisson(a, myRho, frho, fphi, myPhi);
-      
-      outFile << '\n' << a;
-      for (int i=0; i<npart; i++) {
-        outFile << '\n'
-                << x[i]  << " "
-                << y[i]  << " "
-                << z[i]  << " "
-                << vx[i] << " "
-                << vy[i] << " "
-                << vz[i];
-      }
-      Field_on_Mesh(gx,gy,gx, myPhi); // solves for g on mesh
-      updateParticles(a, da,x, y, z, vx, vy, vz, gx,gy,gz);
-       a += da;
-       counter++;
-    }
->>>>>>> cf857b9bef7d1282ea643206948732bf394f884d
-
 
   //////////////////////////////////////////////////////////////////////////
   //Main loop of the code; calculates the updates each step along the way
@@ -255,7 +188,7 @@ int main(int argc, char* argv[])
 	      << vy[i] << " "
 	      << vz[i];
       }
-    Field_on_Mesh(gx,gy,gx, myPhi);
+    Field_on_Mesh(gx,gy,gx, myPhi); //solves for g on mesh
     updateParticles(a, da,x, y, z, vx, vy, vz, gx,gy,gz);
     a += da;
     printVec3D(ngrid, myPhi);
@@ -470,7 +403,6 @@ void updateParticles(double a, double da, double *x, double *y, double*z, double
     if (k == ngrid-1) kp1 = 0;
 
     int N = ngrid;
-<<<<<<< HEAD
     //cout << i << ", " << j << ", " << k << endl;
     ax= gx[i*N*N +  j*N  + k ]*tx*ty*tz + gx[ip1*N*N +  j*N + k ]*dx*ty*tz + 
       gx[i*N*N + jp1*N + k ]*tx*dy*tz + gx[ip1*N*N + jp1*N+ k ]*dx*dy*tz + 
@@ -504,37 +436,6 @@ void updateParticles(double a, double da, double *x, double *y, double*z, double
     if (x[p] < 0) x[p] = ngrid + x[p];
     if (y[p] < 0) y[p] = ngrid + y[p];
     if (z[p] < 0) z[p] = ngrid + z[p];
-=======
-
-  ax= gx[i*N*N +  j*N  + k ]*tx*ty*tz + gx[ip1*N*N +  j*N + k ]*dx*ty*tz + 
-    gx[i*N*N + jp1*N + k ]*tx*dy*tz + gx[ip1*N*N + jp1*N+ k ]*dx*dy*tz + 
-    gx[i*N*N +  j*N + kp1]*tx*ty*dz + gx[ip1*N*N +  j*N +kp1]*dx*ty*dz + 
-    gx[i*N*N + jp1*N +kp1]*tx*dy*dz + gx[ip1*N*N+ jp1*N + kp1]*dx*dy*dz;
-
-  ay= gy[i*N*N +  j*N  + k ]*tx*ty*tz + gy[ip1*N*N +  j*N + k ]*dx*ty*tz + 
-    gy[i*N*N + jp1*N + k ]*tx*dy*tz + gy[ip1*N*N + jp1*N+ k ]*dx*dy*tz + 
-    gy[i*N*N +  j*N + kp1]*tx*ty*dz + gy[ip1*N*N +  j*N +kp1]*dx*ty*dz + 
-    gy[i*N*N + jp1*N +kp1]*tx*dy*dz + gy[ip1*N*N+ jp1*N + kp1]*dx*dy*dz;
-
-    // for (int thing=0; thing < N*N*N; thing++)
-    // {
-    //   if(gy[thing]!= 0){
-    //     cout << gy[thing] << endl;
-    //   }
-    // }
-
-
-
-    // /* update particle velocities */
-    // vx[p] += f(a) * ax * da;
-    // vy[p] += f(a) * ay * da;
-    // vz[p] += f(a) * az * da;
-    // /* 4. update particle positions */ 
-    // x[p] += pow((a+da/2.0), -2) * f(a + da/2.0) * vx[p] * da;
-    // y[p] += pow((a+da/2.0), -2) * f(a + da/2.0) * vy[p] * da;
-    // z[p] += pow((a+da/2.0), -2) * f(a + da/2.0) * vz[p] * da;
->>>>>>> cf857b9bef7d1282ea643206948732bf394f884d
-
   }
 }
 
