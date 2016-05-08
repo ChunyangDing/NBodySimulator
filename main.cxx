@@ -220,7 +220,6 @@ void cicInterpolate(int ngrid, int npart, double *x, double *y, double *z, vecto
 void solvePoisson(double a, vector<double> &rho, fftw_complex *frho,fftw_complex *fphi, vector<double> &phi)
 {
   /* declarations of relevant variables */
-  int l,m,n; // Fourier space counters
   double kx,ky,kz; // frequencies
   double G[ngrid*ngrid*(int)floor((0.5*ngrid +1))]; // Green's function
   fftw_plan p_rho;
