@@ -4,6 +4,7 @@
 #include <fstream>
 #include <vector>
 #include <stdlib.h> // for malloc, drand48()
+#include <unistd.h>
 
 using namespace std;
 
@@ -139,7 +140,7 @@ int main(int argc, char* argv[]) {
   outFile << "ID\tx\ty\tz\tvx\tvy\tvz" << endl;
   
   // loop over time-steps
-  while ( a < aMax )
+  while ( a < aMAX )
     { 
       /* Solve for density field */ 
       cicInterpolate(ngrid, npart, x, y, z, rho);
@@ -221,12 +222,29 @@ void solvePoisson(double a, vector<double> &rho, fftw_complex *frho,fftw_complex
   /* declarations of relevant variables */
   int l,m,n; // Fourier space counters
   double kx,ky,kz; // frequencies
-  double G[ngrid*ngrid*(0.5*ngrid +1)]; // Green's function
+  double G[ngrid*ngrid*(int)floor((0.5*ngrid +1))]; // Green's function
   fftw_plan p_rho;
   fftw_plan p_phi;
 
+  /* Lets do something stupid... the fftw3 library is meant for C, not C++ which
+   * means that it doesn't want to be given vecotrs...
+   * So I have to copy over the data from the vectors
+   * into new arrays (and later copy them back)
+   */
+  double *myRho;
+  double *myPhi;
+
+  myRho = (double*) fftw_malloc(sizeof(double)*ngrid*ngrid*ngrid);
+  myPhi = (double*) fftw_malloc(sizeof(double)*ngrid*ngrid*ngrid);
+
+  for (int i=0; i<ngrid*ngrid*ngrid; i++){
+    myRho[i] = rho[i];
+    myPhi[i] = phi[i];
+  }
+
+
   // says to go from rho to frho
-  p_rho = fftw_plan_dft_r2c_3d(ngrid,ngrid,ngrid, rho, frho, FFTW_ESTIMATE);
+  p_rho = fftw_plan_dft_r2c_3d(ngrid,ngrid,ngrid, myRho, frho, FFTW_ESTIMATE);
 
   // take fourier transform (actually does it)
   fftw_execute(p_rho);
@@ -246,9 +264,9 @@ void solvePoisson(double a, vector<double> &rho, fftw_complex *frho,fftw_complex
   }}}
 
   /* calculate fphi in fourier space */
-  for (int l=-0.5*ngrid-1; l<.5*ngrid; l++){
-  for (int m=-0.5*ngrid-1; m<.5*ngrid; m++){
-  for (int n=0; n<0.5*ngrid; n++){
+  for (int l=0; l<ngrid+1; l++){
+  for (int m=0; m<ngrid+1; m++){
+  for (int n=0; n<0.5*ngrid+1; n++){
     fphi[l+m+n][0] = G[l+m+n]*frho[l+m+n][0];
     fphi[l+m+n][1] = G[l+m+n]*frho[l+m+n][1];
   }}}
@@ -256,17 +274,20 @@ void solvePoisson(double a, vector<double> &rho, fftw_complex *frho,fftw_complex
 
   /* reverse transformation */
 
-  p_phi = fftw_plan_dft_c2r_3d(ngrid,ngrid,ngrid, fphi, phi, FFTW_ESTIMATE);
+  p_phi = fftw_plan_dft_c2r_3d(ngrid,ngrid,ngrid, fphi, myPhi, FFTW_ESTIMATE);
 
   fftw_execute(p_phi);
   fftw_destroy_plan(p_phi);
-  /* nomralize phi */
 
+  /* nomralize phi and copy back into vector*/
   for (int i=0; i<ngrid; i++){
   for (int j=0; j<ngrid; j++){
   for (int k=0; k<ngrid; k++){
-    phi[i+j+k]= (1.0/ngrid)*phi[i+j+k];
-  }}} 
+    phi[i+j+k]= (1.0/ngrid)*myPhi[i+j+k];
+  }}}
+
+
+  fftw_free(myRho); fftw_free(myPhi);
 
 }
 
