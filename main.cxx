@@ -9,7 +9,7 @@ using namespace std;
 
 // function prototypes
 void cicInterpolate(int ngrid, int npart, double *x, double *y, double *z, vector<double>& rho);
-void solvePoisson(double a,double L, vector<double> &rho, fftw_complex *frho,fftw_complex *fphi, vector<double> &phi);
+void solvePoisson(double a, vector<double> &rho, fftw_complex *frho,fftw_complex *fphi, vector<double> &phi);
 double getGx(int i, int j, int k, vector<double> &phi);
 double getGy(int i, int j, int k, vector<double> &phi);
 double getGz(int i, int j, int k, vector<double> &phi);
@@ -111,8 +111,7 @@ int main(int argc, char* argv[]) {
   fphi= (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*ngrid*ngrid*ngrid);
     
   // setup initial conditions
-  for (int i=0; i<ngrid; i++)
-  {
+  for (int i=0; i<ngrid; i++){
     // start with uniform distribution
     x[i]=drand48()*L;
     y[i]=drand48()*L;
@@ -146,7 +145,7 @@ int main(int argc, char* argv[]) {
       cicInterpolate(ngrid, npart, x, y, z, rho);
       
       /* Solve for potential */ 
-      solvePoisson(a, L, rho, frho, rphi, phi);
+      solvePoisson(a, rho, frho, fphi, phi);
       
       /* write out data*/
       outFile << "\nAt a = " << a;
@@ -217,29 +216,30 @@ void cicInterpolate(int ngrid, int npart, double *x, double *y, double *z, vecto
 }
 
 /*  Solve poisson's equations and calculate acceleration field  */ 
-void solvePoisson(double a,double L, vector<double> &rho, fftw_complex *frho,fftw_complex *fphi, vector<double> &phi)
+void solvePoisson(double a, vector<double> &rho, fftw_complex *frho,fftw_complex *fphi, vector<double> &phi)
 {
   /* declarations of relevant variables */
-  int l,m,n;
-  double kx,ky,kz;
-  double G[ngrid*ngrid*ngrid];
+  int l,m,n; // Fourier space counters
+  double kx,ky,kz; // frequencies
+  double G[ngrid*ngrid*(0.5*ngrid +1)]; // Green's function
   fftw_plan p_rho;
   fftw_plan p_phi;
 
+  // says to go from rho to frho
   p_rho = fftw_plan_dft_r2c_3d(ngrid,ngrid,ngrid, rho, frho, FFTW_ESTIMATE);
 
-  // take fourier transform
+  // take fourier transform (actually does it)
   fftw_execute(p_rho);
-  fftw_destroy_plan(p_rho);
+  fftw_destroy_plan(p_rho); // free some memory
 
   /* calculate green's function in fourier space */
   for (int l=0; l<ngrid; l++){
   for (int m=0; m<ngrid; m++){
-  for (int n=0; n<ngrid; n++){
+  for (int n=0; n<0.5*ngrid+1; n++){
     if ( (l==0) && (m==0) && (n==0) ) {G[0] = 0;}
     else {
-      kx = pi*l / L;
-      ky = pi*m / L;
+      kx = pi*(l-0.5*ngrid) / L;
+      ky = pi*(m-0.5*ngrid) / L;
       kz = pi*n / L;
   G[l+m+n] = -((3.0*OmegaM)/(8.0*a)) * pow( (pow(sin(kx),2) + pow(sin(ky),2) + pow(sin(kz),2)), -1);
     }
