@@ -108,8 +108,9 @@ int main(int argc, char* argv[]) {
   fftw_complex *frho;
   fftw_complex *fphi;
 
-  frho= (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*ngrid*ngrid*ngrid);
-  fphi= (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*ngrid*ngrid*ngrid);
+  // complex arrays have dimension n*n*(n/2 + 1)
+  frho= (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*ngrid*ngrid*(0.5*ngrid+1));
+  fphi= (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*ngrid*ngrid*(0.5*ngrid+1));
     
   // setup initial conditions
   for (int i=0; i<ngrid; i++){
@@ -219,6 +220,11 @@ void cicInterpolate(int ngrid, int npart, double *x, double *y, double *z, vecto
 /*  Solve poisson's equations and calculate acceleration field  */ 
 void solvePoisson(double a, vector<double> &rho, fftw_complex *frho,fftw_complex *fphi, vector<double> &phi)
 {
+  /* The FFT's are NOT done "in-place" (in the future we probably should switch)
+   * Separate arrays are used for the input and the FFT'd data.
+   *
+   * The inverse (c2r) transform overwrites input fphi (doesn't matter)
+   */
   /* declarations of relevant variables */
   double kx,ky,kz; // frequencies
   double G[ngrid*ngrid*(int)floor((0.5*ngrid +1))]; // Green's function
@@ -233,6 +239,7 @@ void solvePoisson(double a, vector<double> &rho, fftw_complex *frho,fftw_complex
   double *myRho;
   double *myPhi;
 
+  // real data has dimensions n*n*n
   myRho = (double*) fftw_malloc(sizeof(double)*ngrid*ngrid*ngrid);
   myPhi = (double*) fftw_malloc(sizeof(double)*ngrid*ngrid*ngrid);
 
@@ -282,7 +289,7 @@ void solvePoisson(double a, vector<double> &rho, fftw_complex *frho,fftw_complex
   for (int i=0; i<ngrid; i++){
   for (int j=0; j<ngrid; j++){
   for (int k=0; k<ngrid; k++){
-    phi[i+j+k]= (1.0/ngrid)*myPhi[i+j+k];
+    phi[i+j+k]= (1.0/pow(L,3))*myPhi[i+j+k];
   }}}
 
 
