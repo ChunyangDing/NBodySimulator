@@ -9,7 +9,7 @@ using namespace std;
 
 // function prototypes
 void cicInterpolate(int ngrid, int npart, double *x, double *y, double *z, vector<double>& rho);
-void solvePoisson(double a, vector<double>& rho,  vector<double>& phi, int ngrid);
+void solvePoisson(double a,double L, vector<double> &rho, fftw_complex *frho,fftw_complex *fphi, vector<double> &phi);
 double getGx(int i, int j, int k, vector<double> &phi);
 double getGy(int i, int j, int k, vector<double> &phi);
 double getGz(int i, int j, int k, vector<double> &phi);
@@ -103,6 +103,12 @@ int main(int argc, char* argv[]) {
   
   vector<double> rho;    // Should describe mass density for each cell
   vector<double> phi;     // Should have unique density for each cell 
+
+  fftw_complex *frho;
+  fftw_complex *fphi;
+
+  frho= (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*ngrid*ngrid*ngrid);
+  fphi= (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*ngrid*ngrid*ngrid);
     
   // setup initial conditions
   for (int i=0; i<ngrid; i++)
@@ -136,26 +142,26 @@ int main(int argc, char* argv[]) {
   // loop over time-steps
   while ( a < aMax )
     { 
-      /* 4. call cicInterpolate() */ 
-      
+      /* Solve for density field */ 
       cicInterpolate(ngrid, npart, x, y, z, rho);
       
-      /* 5. call solvePoisson() */ 
+      /* Solve for potential */ 
+      solvePoisson(a, L, rho, frho, rphi, phi);
       
-      //solvePoisson(a, rho, phi, ngrid);
-      
-      /* 6. write out data*/
+      /* write out data*/
       outFile << "\nAt a = " << a;
       for (int i=0; i<npart; i++) {
         outFile << "\n" << x[i] << " "  << y[i] << " "  << z[i] << " "  << vx[i] << " "  << vy[i] << " "  << vz[i];
       }
       
-      /* 7. call updateParticles() */ 
+      /* updateParticles */ 
       updateParticles(ngrid, npart, a, da,&x[0], &y[0], &z[0], &vx[0], &vy[0], &vz[0], phi);
       
-      /* end loop */ 
       a = a + da;
     }
+
+  fftw_free(frho);
+  fftw_free(fphi);
 
     return 0;
 }
@@ -211,37 +217,58 @@ void cicInterpolate(int ngrid, int npart, double *x, double *y, double *z, vecto
 }
 
 /*  Solve poisson's equations and calculate acceleration field  */ 
-/*
-void solvePoisson(double a, double ***rho, double ***phi, int ngrid) {
+void solvePoisson(double a,double L, vector<double> &rho, fftw_complex *frho,fftw_complex *fphi, vector<double> &phi)
+{
+  /* declarations of relevant variables */
+  int l,m,n;
+  double kx,ky,kz;
+  double G[ngrid*ngrid*ngrid];
+  fftw_plan p_rho;
+  fftw_plan p_phi;
 
-  double G[ngrid][ngrid][ngrid];      // Green's function
-  const double G_Const= -( 3*OMEGA/(8*a) ); // constant in front of greens
+  p_rho = fftw_plan_dft_r2c_3d(ngrid,ngrid,ngrid, rho, frho, FFTW_ESTIMATE);
 
-  // start with rho(i, j, k), loop over all space
-  // FFT rho to fourier space
+  // take fourier transform
+  fftw_execute(p_rho);
+  fftw_destroy_plan(p_rho);
 
-  rho_fft = fftw3(rho); // loops internally
-
-  // calulcate G
-    // loop over cells l,m,n (In Fourier space!)
-  for ( int l=-(0.5*ngrid); l<(0.5*ngrid + 1); l++ )
-  {
-    for ( int m=-(0.5*ngrid); m<(0.5*ngrid + 1); m++ )
-    {
-      for ( int n=-(0.5*ngrid); n<(0.5*ngrid + 1); n++ )
-      {
-        G[l][m][n] = pow(sin(pi*l/L), 2) + pow(sin(pi*m/L), 2) + pow(sin(pi*n/L), 2);
-        G[l][m][n] = G_Const * pow(G[l][m][n], -1);
-
-        phi[l][m][n] = G[l][m][n] * rho_fft[l][m][n];
-      }
+  /* calculate green's function in fourier space */
+  for (int l=0; l<ngrid; l++){
+  for (int m=0; m<ngrid; m++){
+  for (int n=0; n<ngrid; n++){
+    if ( (l==0) && (m==0) && (n==0) ) {G[0] = 0;}
+    else {
+      kx = pi*l / L;
+      ky = pi*m / L;
+      kz = pi*n / L;
+  G[l+m+n] = -((3.0*OmegaM)/(8.0*a)) * pow( (pow(sin(kx),2) + pow(sin(ky),2) + pow(sin(kz),2)), -1);
     }
-  }
+  }}}
 
-  // transform back into real space
-  phi = fftw3(phi);
+  /* calculate fphi in fourier space */
+  for (int l=-0.5*ngrid-1; l<.5*ngrid; l++){
+  for (int m=-0.5*ngrid-1; m<.5*ngrid; m++){
+  for (int n=0; n<0.5*ngrid; n++){
+    fphi[l+m+n][0] = G[l+m+n]*frho[l+m+n][0];
+    fphi[l+m+n][1] = G[l+m+n]*frho[l+m+n][1];
+  }}}
+
+
+  /* reverse transformation */
+
+  p_phi = fftw_plan_dft_c2r_3d(ngrid,ngrid,ngrid, fphi, phi, FFTW_ESTIMATE);
+
+  fftw_execute(p_phi);
+  fftw_destroy_plan(p_phi);
+  /* nomralize phi */
+
+  for (int i=0; i<ngrid; i++){
+  for (int j=0; j<ngrid; j++){
+  for (int k=0; k<ngrid; k++){
+    phi[i+j+k]= (1.0/ngrid)*phi[i+j+k];
+  }}} 
+
 }
-*/
 
 //Some helper functions for calculating the g for the x, y, and z directions 
 double getGx(int i, int j, int k, vector<double> &phi){
