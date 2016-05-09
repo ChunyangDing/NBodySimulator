@@ -105,21 +105,33 @@ int main(int argc, char* argv[])
 
   // time-stepping variables
   double a = 0.01;    // start when universe was 1% current size
-  double aMAX = .4;
+  double aMAX = .1;
   double da = 0.001;
 
   // Particle variables
-  double* x = new double[npart];
-  double* y = new double[npart];
-  double* z = new double[npart];
+  // double* x = new double[npart];
+  // double* y = new double[npart];
+  // double* z = new double[npart];
 
-  double *vx = new double[npart];
-  double *vy = new double[npart];
-  double *vz = new double[npart];
-  
-  double *gx = new double[ngrid * ngrid * ngrid];
-  double *gy = new double[ngrid * ngrid * ngrid];
-  double *gz = new double[ngrid * ngrid * ngrid];
+  double x[npart];
+  double y[npart];
+  double z[npart];
+
+  // double *vx = new double[npart];
+  // double *vy = new double[npart];
+  // double *vz = new double[npart];
+
+  double vx[npart];
+  double vy[npart];
+  double vz[npart];
+
+  // double *gx = new double[ngrid * ngrid * ngrid];
+  // double *gy = new double[ngrid * ngrid * ngrid];
+  // double *gz = new double[ngrid * ngrid * ngrid];
+
+  double gx[ngrid*ngrid*ngrid];
+  double gy[ngrid*ngrid*ngrid];
+  double gz[ngrid*ngrid*ngrid];
 
   double Dplus; // factor in initial conditions
 
@@ -157,9 +169,9 @@ int main(int argc, char* argv[])
     y[i] = y[i] + Dplus*sin( 2*pi*y[i] / L);
     z[i] = z[i] + Dplus*sin( 2*pi*z[i] / L);
 
-    vx[i]=0;  // initial velocities are all zero
-    vy[i]=0;  
-    vz[i]=0;  
+    vx[i]=0.5;  // initial velocities are all zero
+    vy[i]=0.5;  
+    vz[i]=0.5;  
   }
   
   //
@@ -193,17 +205,17 @@ int main(int argc, char* argv[])
     a += da;
   }
   
-    delete[] x;
-    delete[] y;
-    delete[] z;
+    // delete[] x;
+    // delete[] y;
+    // delete[] z;
 
-    delete[] vx;
-    delete[] vy;
-    delete[] vz;
+    // delete[] vx;
+    // delete[] vy;
+    // delete[] vz;
 
-    delete[] gx;
-    delete[] gy;
-    delete[] gz;
+    // delete[] gx;
+    // delete[] gy;
+    // delete[] gz;
 
     delete[] rho;
     delete[] phi;
@@ -286,7 +298,7 @@ void Field_on_Mesh(double *gx, double *gy, double *gz, double *phi)
 	gx[i*N*N + j*N +k]= -.5*(phi[ip1*N*N +  j*N  +  k ] - phi[im1*N*N + j*N  + k ]);
 	gy[i*N*N + j*N +k]= -.5*(phi[ i*N*N  + jp1*N +  k ] - phi[ i*N*N + jm1*N + k ]);
 	gz[i*N*N + j*N +k]= -.5*(phi[ i*N*N  +  j*N  + kp1] - phi[ i*N*N  + j*N + km1]); 
-	
+
       }
     }
   } 
@@ -325,24 +337,23 @@ void solvePoisson(double a, double *rho, double *phi) {
 
   /* 3. calculate green's function in fourier space */ 
 
-    int xcounter=-1;
-    int ycounter=-1;
-    int zcounter=-1;
+    int xcounter=0;
+    int ycounter=0;
+    int zcounter=0;
 
     for (int l=-(N/2); l<(N/2); l++){
-      xcounter++;
+      ycounter = 0;
     for (int m=-(N/2); m<(N/2); m++){
-      ycounter++;         
+      zcounter = 0;         
     for (int n=0; n<(N/2 +1); n++){
-      zcounter++;
       //if ( (l==0) && (m==0) && (n==0)) green[xcounter*N*(N/2 +1) + ycounter*(N/2 +1) + zcounter-6] = 0;
       kx = 2.0*pi*l/N;
       ky = 2.0*pi*m/N;
       kz = 2.0*pi*n/N;
       // determine green
-      if (xcounter*N*(N/2 +1) + ycounter*(N/2 +1) + zcounter >= N*N*(N/2+1)) 2+2;
-      else green[xcounter*N*(N/2 +1) + ycounter*(N/2 +1) + zcounter] = -((3.0*OmegaM)/(8.0*a))*pow( pow( sin(.5*kx),2) + pow(sin(.5*ky),2) + pow(sin(.5*kz),2),-1);
-    }}}
+      if (xcounter*N*(N/2 +1) + ycounter*(N/2 +1) + zcounter < N*N*(N/2+1)) green[xcounter*N*(N/2 +1) + ycounter*(N/2 +1) + zcounter] = -((3.0*OmegaM)/(8.0*a))*pow( pow( sin(.5*kx),2) + pow(sin(.5*ky),2) + pow(sin(.5*kz),2),-1);
+      else cout << xcounter << ' ' << ycounter << ' ' << zcounter << endl;
+    zcounter++;}ycounter++;}xcounter++;}
 
     for (int i=0; i<N; i++){
     for (int j=0; j<N; j++){
@@ -403,6 +414,8 @@ void updateParticles(double a, double da, double *x, double *y, double*z, double
     if (j == ngrid-1) jp1 = 0;
     if (k == ngrid-1) kp1 = 0;
 
+    cout << i << ' ' << j << ' ' << k << endl;
+
     int N = npart;
 
     ax= gx[i*N*N +  j*N  + k ]*tx*ty*tz + gx[ip1*N*N +  j*N + k ]*dx*ty*tz + 
@@ -419,15 +432,15 @@ void updateParticles(double a, double da, double *x, double *y, double*z, double
       gz[i*N*N + jp1*N + k ]*tx*dy*tz + gz[ip1*N*N + jp1*N+ k ]*dx*dy*tz + 
       gz[i*N*N +  j*N + kp1]*tx*ty*dz + gz[ip1*N*N +  j*N +kp1]*dx*ty*dz + 
       gz[i*N*N + jp1*N +kp1]*tx*dy*dz + gz[ip1*N*N+ jp1*N + kp1]*dx*dy*dz;
-
+      
     /* update particle velocities */
-    vx[p] += f(a) * ax * da;
-    vy[p] += f(a) * ay * da;
-    vz[p] += f(a) * az * da;
+    vx[p] += ax*da;//f(a) * ax * da;
+    vy[p] += ay*da;//f(a) * ay * da;
+    vz[p] += az*da;//f(a) * az * da;
     /* update particle positions */ 
-    x[p] += pow((a+da/2.0), -2) * f(a + da/2.0) * vx[p] * da;
-    y[p] += pow((a+da/2.0), -2) * f(a + da/2.0) * vy[p] * da;
-    z[p] += pow((a+da/2.0), -2) * f(a + da/2.0) * vz[p] * da;
+    x[p] += vx[p]*da + .5*ax*da*da;//pow((a+da/2.0), -2) * f(a + da/2.0) * vx[p] * da;
+    y[p] += vy[p]*da + .5*ay*da*da;//pow((a+da/2.0), -2) * f(a + da/2.0) * vy[p] * da;
+    z[p] += vz[p]*da + .5*az*da*da;//pow((a+da/2.0), -2) * f(a + da/2.0) * vz[p] * da;
 
     /* Handles wrap around particles, either to the left or to the right */
     // if (x[p] > ngrid) x[p] = x[p] - (double) N;

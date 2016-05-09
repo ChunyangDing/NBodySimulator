@@ -24,8 +24,8 @@ char version[] = "v.89";
 
 
 // relevant variables
-const int ngrid = pow(64,1); //TEMPORARY, FOR TESTING PURPOSES ONLY
-const int npart = pow(32,1);
+const int ngrid = (int) pow(16,1); //TEMPORARY, FOR TESTING PURPOSES ONLY
+const int npart = (int) pow(8,1);
 
 // cosmological variables
 const double OmegaM = 0.27;
