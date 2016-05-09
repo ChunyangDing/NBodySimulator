@@ -7,7 +7,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 void cicInterpolate(double *x, double *y, double *z, double *rho);
-void solvePoisson(double a, double *rho, fftw_complex *frho,fftw_complex *fphi, double *phi);
+void solvePoisson(double a, double *rho, double *phi);
 //double getGx(int i, int j, int k, double *phi);
 //double getGy(int i, int j, int k, double *phi);
 //double getGz(int i, int j, int k, double *phi);
@@ -20,7 +20,7 @@ void printVec3D(int ngrid, double* rho);
 void updateParticles(double a, double da, double *x, double *y, double*z, double *vx, double *vy, double*vz, double *gx, double *gy, double *gz);
 void Field_on_Mesh(double *gx, double *gy, double *gz, double *phi);
 
-char version[] = "v.79";
+char version[] = "v.89";
 
 
 // relevant variables

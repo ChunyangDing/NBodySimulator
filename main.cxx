@@ -35,12 +35,12 @@
 
 
 #include <fftw3.h>
-#include <math.h> // floor(), pow()
+#include <math.h>   // floor(), pow()
 #include <iostream>
 #include <fstream>
 #include <stdlib.h> // malloc, drand48()
 #include <unistd.h> // getopt()
-#include <cmath> //fmod()
+#include <cmath>    //fmod()
 
 #include "pm.h"
 
@@ -103,13 +103,10 @@ int main(int argc, char* argv[])
   //Creating local variables to be used throughout the code
 
   // time-stepping variables
-  double a = 0.01;
-  //double a = 0.01;    // start when universe was 1% current size
-  //double aMAX = 0.1;  // End when universe is 100% current size
+  double a = 0.01;    // start when universe was 1% current size
   double aMAX = .014;
-  double da = 0.001;   // Advance by 1% per time-step 
+  double da = 0.001;
 
-  //Giving me errors about "variable array length" even though npart is declared as constant.
   // Particle variables
   double* x = new double[npart];
   double* y = new double[npart];
@@ -125,32 +122,18 @@ int main(int argc, char* argv[])
 
   double Dplus; // factor in initial conditions
 
-  double *myRho;
-  double *myPhi;
-
   // real data has dimensions n*n*n
-  myRho = (double*) fftw_malloc(sizeof(double)*ngrid*ngrid*ngrid);
-  myPhi = (double*) fftw_malloc(sizeof(double)*ngrid*ngrid*ngrid);
+  double *rho = new double[ngrid * ngrid * ngrid];
+  double *phi = new double[ngrid * ngrid * ngrid];
 
-  //DEPRECATED, FOR DELETION
-  //printVec3D(ngrid, myPhi);
-  //vector<double> rho;    // Should describe mass density for each cell
-  //vector<double> phi;     // Should have unique density for each cell 
-  
-  fftw_complex *frho;
-  fftw_complex *fphi;
 
-  // complex arrays have dimension n*n*(n/2 + 1)
-  //logically, they still have n * n * n
-  //frho= (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*ngrid*ngrid*ngrid);
-  //fphi= (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*ngrid*ngrid*ngrid);
-  frho= (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*ngrid*ngrid*(0.5*ngrid+1));
-  fphi= (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*ngrid*ngrid*(0.5*ngrid+1));
+
+
 
   // setup initial conditions
   for (int i=0; i<npart; i++){
     // start with uniform distribution
-    x[i]=drand48()*ngrid; //EDITED BY CHUNNY: should not go to L, but to ngrid. Bounds are 0 - 63, not 0 - 99
+    x[i]=drand48()*ngrid;
     y[i]=drand48()*ngrid;
     z[i]=drand48()*ngrid; 
 
@@ -176,15 +159,13 @@ int main(int argc, char* argv[])
   
   //
   //////////////////////////////////////////////////////////////////////////
-  //Main loop of the code; calculates the updates each step along the way
-  // loop over time-steps
   while ( a < aMAX ){ 
-    cout << a << endl;
-    cicInterpolate(x, y, z, myRho);
-    printVec3D(ngrid, myRho);
+    cicInterpolate(x, y, z, rho);
+
+    solvePoisson(a, rho, phi);
     
-    solvePoisson(a, myRho, frho, fphi, myPhi);
-    
+
+
     outFile << '\n' << endl;
     for (int i=0; i<npart; i++) {
       outFile << '\n'
@@ -195,33 +176,44 @@ int main(int argc, char* argv[])
 	      << vy[i] << "  \t"
 	      << vz[i];
       }
-    Field_on_Mesh(gx,gy,gx, myPhi); //solves for g on mesh
-    updateParticles(a, da,x, y, z, vx, vy, vz, gx,gy,gz);
+
+
+
+    Field_on_Mesh(gx,gy,gz, phi); //solves for g on mesh
+
+
+    updateParticles(a,da, x,y,z, vx,vy,vz, gx,gy,gz);
+
+
     a += da;
-    //printVec3D(ngrid, myPhi);
   }
   
-    
+    delete[] x;
+    delete[] y;
+    delete[] z;
+
+    delete[] vx;
+    delete[] vy;
+    delete[] vz;
+
+    delete[] gx;
+    delete[] gy;
+    delete[] gz;
+
+    delete[] rho;
+    delete[] phi;
+
   outFile.close();
-  //fftw_free(frho);
-  //fftw_free(fphi);
-  //fftw_free(myRho);
-  //fftw_free(myPhi);
+
+
   
   return 0;
 }
   
   
 
-/*
- * Calculate contribution of each particle to the density grid points using the CIC interpolation.
- * Each particle contributes to the cell it is in and the neighboring grid cells based on the
- * algorithm in Section 2.8 of the write-up.
- */ 
 
-void cicInterpolate(double *x, double *y, double *z, double *rho)
-{
-  /* declarations of relevant variables*/
+void cicInterpolate(double *x, double *y, double *z, double *rho){
 
   int I, J, K;      // Parent cell coordinates
 
@@ -259,96 +251,17 @@ void cicInterpolate(double *x, double *y, double *z, double *rho)
   //for (int i=0; i<ngrid*ngrid*ngrid; i++){
   //  rho[i] = ( rho[i] - rhoCrit ) / rhoCrit;
   //}
-
-  //cout << "This is rho" << endl;
-  //printVec3D(ngrid, rho);
-
-
 }
 
 
-/*  Solve poisson's equations and calculate acceleration field  */ 
-void solvePoisson(double a, double *myRho, fftw_complex *frho,fftw_complex *fphi, double *myPhi)
-{
-  /* The FFT's are NOT done "in-place" (in the future we probably should switch)
-   * Separate arrays are used for the input and the FFT'd data.
-   *
-   * The inverse (c2r) transform overwrites input fphi (doesn't matter)
-   */
-  /* declarations of relevant variables */
-  double kx,ky,kz; // frequencies
-  double *G = new double[ngrid * ngrid * ngrid]; //(int) floor((0.5 * ngrid )) + 1]; //Green's Function
-  fftw_plan p_rho;
-  fftw_plan p_phi;
 
-  //printVec3D(ngrid, myRho);
-
-  // says to go from rho to frho
-  p_rho = fftw_plan_dft_r2c_3d(ngrid,ngrid,ngrid, myRho, frho, FFTW_ESTIMATE);
-
-  // take fourier transform (actually does it)
-  fftw_execute(p_rho);
-  fftw_destroy_plan(p_rho); // free some memory
-
-  /* calculate green's function in fourier space */
-  for (int l=0; l<ngrid; l++){
-    for (int m=0; m<ngrid; m++){
-      for (int n = 0; n < ngrid; n++){
-      //for (int n=0; n<(0.5*ngrid+1); n++){
-	if ( (l==0) && (m==0) && (n==0) ) {G[0] = 0;}
-	else {
-	  kx = pi*(l-0.5*ngrid) / L;
-	  ky = pi*(m-0.5*ngrid) / L;
-	  kz = pi*n / L;
-	  //CHUNNY EDITS
-	  //G[l + m + n] = - ((3.0 * OmegaM)/8.0 * a) * pow( (pow(sin(kx), 2) + pow(sin(ky), 2) + pow(sin(kz), 2)), -1);
-	  G[l* ngrid * ngrid  + m * ngrid + n] = - ((3.0 * OmegaM)/8.0 * a) * pow( (pow(sin(kx), 2) + pow(sin(ky), 2) + pow(sin(kz), 2)), -1);
-	  //G[l* ngrid * (int)(0.5 * ngrid + 1) +m * (int)(0.5 * ngrid + 1) +n] = -((3.0*OmegaM)/(8.0*a)) * pow( (pow(sin(kx),2) + pow(sin(ky),2) + pow(sin(kz),2)), -1);
-	}
-      }
-    }
-  }
-
-  /* calculate fphi in fourier space */
-  for (int l=0; l<ngrid; l++){
-    for (int m=0; m<ngrid; m++){
-      for (int n=0; n<ngrid; n++){
-	//for (int n=0; n<0.5*ngrid+1; n++){
-	//fphi[l + m + n][0] = G[l + m + n] * frho[l + m + n][0];
-	//fphi[l + m + n][1] = G[l + m + n] * frho[l + m + n][1];
-	fphi[l * ngrid * ngrid + m * ngrid + n][0] = G[l * ngrid * ngrid + m * ngrid + n] * frho[l * ngrid * ngrid + m * ngrid + n][0];
-	fphi[l * ngrid * ngrid + m * ngrid + n][1] = G[l * ngrid * ngrid + m * ngrid + n] * frho[l * ngrid * ngrid + m * ngrid + n][1];
-
-	//fphi[l* ngrid * (int)(0.5 * ngrid + 1) +m * (int)(0.5 * ngrid + 1) +n][0] = G[l* ngrid * (int)(0.5 * ngrid + 1) +m * (int)(0.5 * ngrid + 1) +n]*frho[l* ngrid * (int)(0.5 * ngrid + 1) +m * (int)(0.5 * ngrid + 1) +n][0];
-	//fphi[l* ngrid * (int)(0.5 * ngrid + 1) +m * (int)(0.5 * ngrid + 1) +n][1] = G[l* ngrid * (int)(0.5 * ngrid + 1) +m * (int)(0.5 * ngrid + 1) +n]*frho[l* ngrid * (int)(0.5 * ngrid + 1) +m * (int)(0.5 * ngrid + 1) +n][1];
-      }
-    }
-  }
- 
-
-
-  /* reverse transformation */
-  p_phi = fftw_plan_dft_c2r_3d(ngrid,ngrid,ngrid, fphi, myPhi, FFTW_ESTIMATE);
-
-  fftw_execute(p_phi);
-  fftw_destroy_plan(p_phi);
-  /* normalize phi and copy back into vector*/
-  for (int i=0; i<ngrid; i++){
-    for (int j=0; j<ngrid; j++){
-      for (int k=0; k<ngrid; k++){
-	myPhi[i * ngrid * ngrid + j * ngrid + k ] = (1.0 / pow(L, 3)) * myPhi[i * ngrid * ngrid + j * ngrid + k];
-	//myPhi[i+j+k]= (1.0/pow(L,3))*myPhi[i+j+k];
-      }
-    }
-  }
-   
-}
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
 void Field_on_Mesh(double *gx, double *gy, double *gz, double *phi)
 {
   int ip1,im1,jp1,jm1,kp1,km1;
+  int N=ngrid;
 
   for (int i=0; i<ngrid; i++){
     for (int j=0; j<ngrid; j++){
@@ -365,16 +278,85 @@ void Field_on_Mesh(double *gx, double *gy, double *gz, double *phi)
 	if (j == 0) jm1 = ngrid-1;
 	if (k == 0) km1 = ngrid-1;
 	
-	gx[i*ngrid*ngrid+j*ngrid+k]= -.5*(phi[ip1*ngrid*ngrid + j*ngrid + k] - phi[im1*ngrid*ngrid + j*ngrid + k]);
-	gy[i*ngrid*ngrid+j*ngrid+k]= -.5*(phi[i*ngrid*ngrid + jp1*ngrid + k] - phi[i*ngrid*ngrid + jm1*ngrid + k]);
-	gz[i*ngrid*ngrid+j*ngrid+k]= -.5*(phi[i*ngrid*ngrid + j*ngrid + kp1] - phi[i*ngrid*ngrid + j*ngrid + km1]); 
+	gx[i*N*N + j*N +k]= -.5*(phi[ip1*N*N +  j*N  +  k ] - phi[im1*N*N + j*N  + k ]);
+	gy[i*N*N + j*N +k]= -.5*(phi[ i*N*N  + jp1*N +  k ] - phi[ i*N*N + jm1*N + k ]);
+	gz[i*N*N + j*N +k]= -.5*(phi[ i*N*N  +  j*N  + kp1] - phi[ i*N*N  + j*N + km1]); 
 	
       }
     }
   } 
 }
 
+void solvePoisson(double a, double *rho, double *phi) {
+    /* 1. declarations of relevant variables */ 
+    int N=ngrid;
+  fftw_complex *frho= (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*N*N*(N/2 +1));
+  fftw_plan pf;
+  fftw_plan pb;
+  double kx, ky, kz;
 
+  fftw_complex *fphi= (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*N*N*(N/2 + 1));
+
+  double *green= new double[N*N*(N/2 +1)];
+
+    /* 2. fourier transform rho into fourier space
+    We suggest looking to the fftw_plan_dft_r2c_3d() function for this transform. 
+    Any fourier transform in fftw is then followed by the execution command. 
+    For example:*/
+
+
+    // setup fftw plan 
+    pf = fftw_plan_dft_r2c_3d(ngrid, ngrid, ngrid, rho, frho, FFTW_ESTIMATE);
+
+    // take fourier transform
+    fftw_execute(pf); 
+
+
+  /* 3. calculate green's function in fourier space */ 
+
+    int xcounter=0;
+    int ycounter=0;
+    int zcounter=0;
+
+    for (int l=-(N/2); l<(N/2); l++){
+      xcounter++;
+    for (int m=-(N/2); m<(N/2); m++){
+      ycounter++;         
+    for (int n=0; n<(N/2 + 1); n++){
+      zcounter++;
+      if ( (l==0) && (m==0) && (n==0)) green[xcounter*N*(N/2 +1) + ycounter*(N/2 +1) + zcounter] = 0;
+      kx = 2.0*pi*l/N;
+      ky = 2.0*pi*m/N;
+      kz = 2.0*pi*n/N;
+      // determine green
+      green[xcounter*N*(N/2 +1) + ycounter*(N/2 +1) + zcounter] = -((3.0*OmegaM)/(8.0*a))*pow( pow( sin(.5*kx),2) + pow(sin(.5*ky),2) + pow(sin(.5*kz),2),-1);
+    }}}
+
+    for (int i=0; i<N; i++){
+    for (int j=0; j<N; j++){
+    for (int k=0; k<(N/2 +1); k++){
+      fphi[i*N*(N/2 +1) + j*(N/2 + 1) + k][0] = green[i*N*(N/2 +1) + j*(N/2 + 1) + k] * frho[i*N*(N/2 +1) + j*(N/2 + 1) + k][0];
+      fphi[i*N*(N/2 +1) + j*(N/2 + 1) + k][1] = green[i*N*(N/2 +1) + j*(N/2 + 1) + k] * frho[i*N*(N/2 +1) + j*(N/2 + 1) + k][1];
+    }}}
+
+
+    /* 4. reverse transformation using fftw_plan_dft_c2r_3d() and fftw_execute() */
+    pb = fftw_plan_dft_c2r_3d(ngrid, ngrid, ngrid, fphi, phi, FFTW_ESTIMATE);
+
+    fftw_execute(pb);
+
+    for (int i=0; i<N; i++){
+    for (int j=0; j<N; j++){
+    for (int k=0; k<N; k++){
+      phi[i*N*N + j*N + k] *= 1.0/(N*N*N);
+    }}} 
+
+    delete[] green;
+    fftw_destroy_plan(pf);
+    fftw_destroy_plan(pb);
+    fftw_free(frho);
+    fftw_free(fphi);
+} 
 
 void updateParticles(double a, double da, double *x, double *y, double*z, double *vx, double *vy, double*vz, double *gx, double *gy, double *gz){
   for (int p=0; p<npart; p++)
@@ -404,8 +386,8 @@ void updateParticles(double a, double da, double *x, double *y, double*z, double
     if (j == ngrid-1) jp1 = 0;
     if (k == ngrid-1) kp1 = 0;
 
-    int N = ngrid;
-    //cout << i << ", " << j << ", " << k << endl;
+    int N = npart;
+
     ax= gx[i*N*N +  j*N  + k ]*tx*ty*tz + gx[ip1*N*N +  j*N + k ]*dx*ty*tz + 
       gx[i*N*N + jp1*N + k ]*tx*dy*tz + gx[ip1*N*N + jp1*N+ k ]*dx*dy*tz + 
       gx[i*N*N +  j*N + kp1]*tx*ty*dz + gx[ip1*N*N +  j*N +kp1]*dx*ty*dz + 
@@ -425,19 +407,22 @@ void updateParticles(double a, double da, double *x, double *y, double*z, double
     vx[p] += f(a) * ax * da;
     vy[p] += f(a) * ay * da;
     vz[p] += f(a) * az * da;
-    /* 4. update particle positions */ 
+    /* update particle positions */ 
     x[p] += pow((a+da/2.0), -2) * f(a + da/2.0) * vx[p] * da;
     y[p] += pow((a+da/2.0), -2) * f(a + da/2.0) * vy[p] * da;
     z[p] += pow((a+da/2.0), -2) * f(a + da/2.0) * vz[p] * da;
 
     /* Handles wrap around particles, either to the left or to the right */
-    x[p] = fmod(x[p], ngrid);
-    y[p] = fmod(y[p], ngrid);
-    z[p] = fmod(z[p], ngrid);
+    // if (x[p] > ngrid) x[p] = x[p] - (double) N;
+    // if (y[p] > ngrid) y[p] = y[p] - (double) N;
+    // if (z[p] > ngrid) z[p] = z[p] - (double) N;
+    // x[p] = fmod(x[p], ngrid);
+    // y[p] = fmod(y[p], ngrid);
+    // z[p] = fmod(z[p], ngrid);
 
-    if (x[p] < 0) x[p] = ngrid + x[p];
-    if (y[p] < 0) y[p] = ngrid + y[p];
-    if (z[p] < 0) z[p] = ngrid + z[p];
+    // if (x[p] < 0) x[p] = ngrid + x[p];
+    // if (y[p] < 0) y[p] = ngrid + y[p];
+    // if (z[p] < 0) z[p] = ngrid + z[p];
   }
 }
 
