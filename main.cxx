@@ -38,6 +38,7 @@
 #include <math.h>   // floor(), pow()
 #include <iostream>
 #include <fstream>
+ #include <string.h> // memset()
 #include <stdlib.h> // malloc, drand48()
 #include <unistd.h> // getopt()
 #include <cmath>    //fmod()
@@ -104,7 +105,7 @@ int main(int argc, char* argv[])
 
   // time-stepping variables
   double a = 0.01;    // start when universe was 1% current size
-  double aMAX = .014;
+  double aMAX = .4;
   double da = 0.001;
 
   // Particle variables
@@ -125,6 +126,10 @@ int main(int argc, char* argv[])
   // real data has dimensions n*n*n
   double *rho = new double[ngrid * ngrid * ngrid];
   double *phi = new double[ngrid * ngrid * ngrid];
+
+  // initialize rho and phi with 0s
+  memset(rho, 0, sizeof(double)*ngrid*ngrid*ngrid);
+  memset(phi, 0, sizeof(double)*ngrid*ngrid*ngrid);
 
 
 
@@ -291,13 +296,19 @@ void solvePoisson(double a, double *rho, double *phi) {
     /* 1. declarations of relevant variables */ 
     int N=ngrid;
   fftw_complex *frho= (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*N*N*(N/2 +1));
+  memset(frho, 0, sizeof(fftw_complex)*N*N*(N/2+1));
+
   fftw_plan pf;
   fftw_plan pb;
   double kx, ky, kz;
 
   fftw_complex *fphi= (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*N*N*(N/2 + 1));
+  memset(fphi, 0, sizeof(fftw_complex)*N*N*(N/2+1));
 
-  double *green= new double[N*N*(N/2 +1)];
+  //double *green= new double[N*N*(N/2 +1)];
+  double *green= (double*) malloc(sizeof(double)*N*N*(N/2 +1));
+  memset(green, 0, sizeof(double)*N*N*(N/2+1));
+
 
     /* 2. fourier transform rho into fourier space
     We suggest looking to the fftw_plan_dft_r2c_3d() function for this transform. 
@@ -314,22 +325,23 @@ void solvePoisson(double a, double *rho, double *phi) {
 
   /* 3. calculate green's function in fourier space */ 
 
-    int xcounter=0;
-    int ycounter=0;
-    int zcounter=0;
+    int xcounter=-1;
+    int ycounter=-1;
+    int zcounter=-1;
 
     for (int l=-(N/2); l<(N/2); l++){
       xcounter++;
     for (int m=-(N/2); m<(N/2); m++){
       ycounter++;         
-    for (int n=0; n<(N/2 + 1); n++){
+    for (int n=0; n<(N/2 +1); n++){
       zcounter++;
-      if ( (l==0) && (m==0) && (n==0)) green[xcounter*N*(N/2 +1) + ycounter*(N/2 +1) + zcounter] = 0;
+      //if ( (l==0) && (m==0) && (n==0)) green[xcounter*N*(N/2 +1) + ycounter*(N/2 +1) + zcounter-6] = 0;
       kx = 2.0*pi*l/N;
       ky = 2.0*pi*m/N;
       kz = 2.0*pi*n/N;
       // determine green
-      green[xcounter*N*(N/2 +1) + ycounter*(N/2 +1) + zcounter] = -((3.0*OmegaM)/(8.0*a))*pow( pow( sin(.5*kx),2) + pow(sin(.5*ky),2) + pow(sin(.5*kz),2),-1);
+      if (xcounter*N*(N/2 +1) + ycounter*(N/2 +1) + zcounter >= N*N*(N/2+1)) 2+2;
+      else green[xcounter*N*(N/2 +1) + ycounter*(N/2 +1) + zcounter] = -((3.0*OmegaM)/(8.0*a))*pow( pow( sin(.5*kx),2) + pow(sin(.5*ky),2) + pow(sin(.5*kz),2),-1);
     }}}
 
     for (int i=0; i<N; i++){
@@ -351,11 +363,16 @@ void solvePoisson(double a, double *rho, double *phi) {
       phi[i*N*N + j*N + k] *= 1.0/(N*N*N);
     }}} 
 
-    delete[] green;
-    fftw_destroy_plan(pf);
-    fftw_destroy_plan(pb);
+    //delete[] green;
+    free(green);
     fftw_free(frho);
     fftw_free(fphi);
+    fftw_destroy_plan(pf);
+    fftw_destroy_plan(pb);
+
+
+    //(testing) brings back fftw to its initial state without any wisdom information retained
+    //fftw_cleanup();
 } 
 
 void updateParticles(double a, double da, double *x, double *y, double*z, double *vx, double *vy, double*vz, double *gx, double *gy, double *gz){
