@@ -2,12 +2,12 @@ CC = g++
 PRODUCTFLAGS=-Wall -pedantic
 LINKFLAGS=-lfftw3 -lm
 DEBUGFLAGS=-g
-TARGET=main
+TARGET=pm
 
 #Use this option to debug code.
 #Make sure the code compiles without warning under this option before using 'make final'.
-production: main.cxx
-	${CC} main.cxx ${DEBUGFLAGS} ${LINKFLAGS} ${PRODUCTFLAGS} -o ${TARGET}
+production: pm.cxx
+	${CC} pm.cxx ${DEBUGFLAGS} ${LINKFLAGS} ${PRODUCTFLAGS} -o ${TARGET}
 
 
 #Use this option to debug code further.
@@ -16,9 +16,9 @@ debug: pm.cxx
 
 
 #Use this to compile the final product.
-final: main.cxx
-	${CC} main.cxx -o ${TARGET}
-	
+final: pm.cxx
+	${CC} pm.cxx -o ${TARGET}
+
 #Use this to delete compiled executable file.
 clean:
 	rm -rf ${TARGET}
