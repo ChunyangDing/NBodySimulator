@@ -442,6 +442,7 @@ void updateParticles(double a, double da, double *x, double *y, double*z, double
     y[p] += vy[p]*da + .5*ay*da*da;//pow((a+da/2.0), -2) * f(a + da/2.0) * vy[p] * da;
     z[p] += vz[p]*da + .5*az*da*da;//pow((a+da/2.0), -2) * f(a + da/2.0) * vz[p] * da;
 
+    //Why is wraparound commented out for now?
     /* Handles wrap around particles, either to the left or to the right */
     // if (x[p] > ngrid) x[p] = x[p] - (double) N;
     // if (y[p] > ngrid) y[p] = y[p] - (double) N;
@@ -455,126 +456,7 @@ void updateParticles(double a, double da, double *x, double *y, double*z, double
     // if (z[p] < 0) z[p] = ngrid + z[p];
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ///////////////////////////////////////////////////////////////////////////////////////////
-
-// //Some helper functions for calculating the g for the x, y, and z directions 
-// double getGx(int i, int j, int k, double *phi){
-//   double gx;
-//   if (i == 0){
-//     gx = -0.5 * (phi[ngrid*ngrid* (ngrid - 1) + ngrid * j + k] - phi[ngrid*ngrid * (i + 1) + ngrid * j + k]);// i = ngrid - 1
-//   }
-//   else {
-//     if (i == ngrid){
-//       gx = - 0.5 * (phi[ngrid*ngrid * (i - 1) + ngrid * j + k] - phi[ngrid * j + k]); //i = 0  
-//     }
-//     else{
-//       gx = -0.5 * (phi[ngrid*ngrid * (i - 1) + ngrid * j + k] - phi[ngrid*ngrid * (i + 1) + ngrid * j + k]); // The normal state
-//     }
-//   }
-//   return gx;
-// }
-
-
-// double getGy(int i, int j, int k, double *phi){
-//   double gy;
-//   if (j == 0){
-//     gy = -0.5 *(phi[ngrid*ngrid* i + ngrid * (ngrid - 1) + k] - phi[ngrid*ngrid * i + ngrid * (j+1) + k]);// j = ngrid - 1
-//   }
-//   else {
-//     if (j == ngrid){
-//       gy = -0.5 * (phi[ngrid*ngrid * i + ngrid * (j - 1) + k] - phi[ngrid*ngrid * i + k]); // j = 0
-//     }
-//     else{
-//       gy = -0.5 * (phi[ngrid*ngrid * i + ngrid * (j - 1) + k] - phi[ngrid*ngrid * i + ngrid * (j + 1) + k]); // normal
-//     }
-//   }
-//   return gy;
-// }
-
-
-
-// double getGz(int i, int j, int k, double *phi){
-//   double gz;
-//   if (k == 0){
-//     gz = -0.5 * (phi[ngrid*ngrid * i + ngrid * j + (ngrid - 1)] - phi[ngrid*ngrid * + ngrid * j + (k + 1)]); // k = ngrid - 1
-//   }
-//   else {
-//     if (k == ngrid){
-//       gz = -0.5 * (phi[ngrid*ngrid * i + ngrid * j + (k - 1)] - phi[ngrid*ngrid * i + ngrid * j]); // k = 0
-//     }
-//     else {
-//       gz = -0.5 * (phi[ngrid*ngrid * i + ngrid * j + (k - 1)] - phi[ngrid*ngrid * i + ngrid * j + (k + 1)] ); //normal
-//     }
-//   }
-//   return gz;
-// }
-
-
-
-
-// /* Update position, velocities for each particle */ 
-// void updateParticles(double a, double da, double *x, double *y, double *z, double *vx, double *vy, double *vz, double *phi)
-// {
-//   for (int abc = 0; abc < npart; abc++){
-//     /* 1. declarations of relevant variables */ 
-//     int i = static_cast<int>(floor(*x));
-//     int j = static_cast<int>(floor(*y));
-//     int k = static_cast<int>(floor(*z));
-
-//     double dx = *x - i;
-//     double dy = *y - i;
-//     double dz = *z - i;
-
-//     double tx = 1 - dx;
-//     double ty = 1 - dy; 
-//     double tz = 1 - dz;
-
-//     double gx = 0;
-//     double gy = 0;
-//     double gz = 0;
-
-//     /* 2. calculate particle accelerations from phi */
-//     gx = getGx(i, j, k, phi) * tx * ty * tz + getGx(i+1, j, k, phi) * dx * ty * tz + getGx(i, j+1, k, phi) * tx * dy * tz + getGx(i + 1, j+1, k, phi) * dx * dy * tz + getGx(i, j, k+1, phi)* tx * ty * dz + getGx(i+1, j, k+1, phi) * dx * ty * dz + getGx(i, j+1, k+1, phi) * tx * dy * dz + getGx(i + 1, j+1, k+1, phi) * dx * dy * dz;
-//     gy = getGy(i, j, k, phi) * tx * ty * tz + getGy(i+1, j, k, phi) * dx * ty * tz + getGy(i, j+1, k, phi) * tx * dy * tz + getGy(i + 1, j+1, k, phi) * dx * dy * tz + getGy(i, j, k+1, phi)* tx * ty * dz + getGy(i+1, j, k+1, phi) * dx * ty * dz + getGy(i, j+1, k+1, phi) * tx * dy * dz + getGy(i + 1, j+1, k+1, phi) * dx * dy * dz;
-//     gz = getGz(i, j, k, phi) * tx * ty * tz + getGz(i+1, j, k, phi) * dx * ty * tz + getGz(i, j+1, k, phi) * tx * dy * tz + getGz(i + 1, j+1, k, phi) * dx * dy * tz + getGz(i, j, k+1, phi)* tx * ty * dz + getGz(i+1, j, k+1, phi) * dx * ty * dz + getGz(i, j+1, k+1, phi) * tx * dy * dz + getGz(i + 1, j+1, k+1, phi) * dx * dy * dz;
-
-//     /* 3. update particle velocities */
-//     vx[abc] = vx[abc] + f(a) * gx * da;
-//     vy[abc] = vy[abc] + f(a) * gy * da;
-//     vz[abc] = vz[abc] + f(a) * gz * da;
-//     /* 4. update particle positions */ 
-//     x[abc] = x[abc] + pow((a+da/2.0), -2) * f(a + da/2.0) * vx[abc] * da;
-//     y[abc] = y[abc] + pow((a+da/2.0), -2) * f(a + da/2.0) * vy[abc] * da;
-//     z[abc] = z[abc] + pow((a+da/2.0), -2) * f(a + da/2.0) * vz[abc] * da;
-
-
-//     while (x[abc] > 100) x[abc] -= L;
-//     while (y[abc] > 100) y[abc] -= L;
-//     while (z[abc] > 100) z[abc] -= L;
-//   }
-// }
-
-
-
-
-
 double f(double a){
   return pow((1 / a) * sqrt( OmegaM + OmegaK * a + OmegaL * pow(a, 2) ), -0.5);
 }
