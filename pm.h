@@ -20,7 +20,7 @@ void printVec3D(int ngrid, double* rho);
 void updateParticles(double a, double da, double *x, double *y, double*z, double *vx, double *vy, double*vz, double *gx, double *gy, double *gz);
 void Field_on_Mesh(double *gx, double *gy, double *gz, double *phi);
 
-char version[] = "v.89";
+char version[] = "v.99";
 
 
 // relevant variables

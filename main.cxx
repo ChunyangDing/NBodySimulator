@@ -305,8 +305,8 @@ void Field_on_Mesh(double *gx, double *gy, double *gz, double *phi)
 }
 
 void solvePoisson(double a, double *rho, double *phi) {
-    /* 1. declarations of relevant variables */ 
-    int N=ngrid;
+  /* 1. declarations of relevant variables */ 
+  int N=ngrid;
   fftw_complex *frho= (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*N*N*(N/2 +1));
   memset(frho, 0, sizeof(fftw_complex)*N*N*(N/2+1));
 
